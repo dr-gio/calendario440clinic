@@ -12,8 +12,9 @@ export default async function handler(req, res) {
         const projectId = process.env.GOOGLE_PROJECT_ID;
 
         if (!key || !email) {
-            console.error("Missing Google Credentials in Environment Code");
-            return res.status(500).json({ error: 'Server configuration error: Missing credentials' });
+            const missing = !key ? 'GOOGLE_PRIVATE_KEY' : 'GOOGLE_SERVICE_ACCOUNT_EMAIL';
+            console.error(`Missing Google Credential: ${missing}`);
+            return res.status(500).json({ error: `Server configuration error: Missing ${missing}` });
         }
 
         const auth = new google.auth.JWT({

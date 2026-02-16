@@ -28,8 +28,7 @@ export async function fetchCalendarBoard(
         const response = await fetch(`/api/calendar?${params.toString()}`);
 
         if (!response.ok) {
-          console.warn(`Failed to fetch for calendar ${config.label}: ${response.statusText}`);
-          return [];
+          throw new Error(`API Error: ${response.statusText}`);
         }
 
         const data = await response.json();

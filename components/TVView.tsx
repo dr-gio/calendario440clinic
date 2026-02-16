@@ -8,6 +8,7 @@ const TVView: React.FC = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [calendars, setCalendars] = useState<CalendarConfig[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [hasError, setHasError] = useState(false);
 
   const loadData = async () => {
     const configs = storage.getCalendars();
@@ -15,8 +16,10 @@ const TVView: React.FC = () => {
     try {
       const data = await fetchCalendarBoard(configs);
       setEvents(data);
+      setHasError(false);
     } catch (e) {
       console.error("Refresh Error", e);
+      setHasError(true);
     }
   };
 
@@ -60,7 +63,7 @@ const TVView: React.FC = () => {
     <div className="h-screen w-screen bg-[#020617] text-white flex flex-col overflow-hidden font-sans">
       {/* TOP BAR */}
       <div className="h-1 text-center text-[8px] text-slate-700 tracking-[1em] font-black uppercase py-4">440CLINIC Display System</div>
-      
+
       {/* HEADER */}
       <header className="h-28 flex items-center justify-between px-10 border-b border-slate-900 bg-[#020617] relative">
         <div className="flex items-center gap-10">
@@ -71,8 +74,10 @@ const TVView: React.FC = () => {
           <div>
             <h1 className="text-3xl font-black tracking-widest text-white leading-none">MONITOR OPERATIVO</h1>
             <div className="flex items-center gap-2 mt-2">
-              <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">MODO DEMO (SIN CONEXIÓN)</span>
+              <span className={`w-2 h-2 rounded-full animate-pulse ${hasError ? 'bg-red-600' : 'bg-emerald-500'}`}></span>
+              <span className={`text-[11px] font-bold uppercase tracking-widest ${hasError ? 'text-red-500' : 'text-emerald-500'}`}>
+                {hasError ? 'ERROR DE CONEXIÓN' : 'SISTEMA CONECTADO'}
+              </span>
             </div>
           </div>
         </div>
@@ -84,7 +89,7 @@ const TVView: React.FC = () => {
             </div>
             SINCRONIZAR CLÍNICA
           </button>
-          
+
           <div className="text-right">
             <div className="text-6xl font-black text-[#42a5f5] tabular-nums leading-none tracking-tight">
               {currentTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
@@ -155,7 +160,7 @@ const TVView: React.FC = () => {
                     {current.length > 0 ? (
                       current.map(e => (
                         <div key={e.id} className="p-8 rounded-3xl bg-blue-600/10 border-2 border-blue-500/40 shadow-[0_0_50px_-10px_rgba(37,99,235,0.2)]">
-                           <div className="text-sm font-mono text-blue-400 mb-2 font-bold">
+                          <div className="text-sm font-mono text-blue-400 mb-2 font-bold">
                             {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
                           </div>
                           <h5 className="text-2xl font-bold text-white mb-2">{e.title}</h5>

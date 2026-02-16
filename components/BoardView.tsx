@@ -17,6 +17,7 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
   const [selectedType, setSelectedType] = useState<CalendarType | 'all'>('resource');
   const [search, setSearch] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [hasError, setHasError] = useState(false);
 
   const loadEvents = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -25,6 +26,10 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
       setCalendars(configs.sort((a, b) => a.sort - b.sort));
       const data = await fetchCalendarBoard(configs, selectedDate);
       setEvents(data);
+      setHasError(false);
+    } catch (error) {
+      console.error("Load Events Error", error);
+      setHasError(true);
     } finally {
       if (!silent) setLoading(false);
     }
@@ -139,7 +144,9 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
                     <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{cal.type}</p>
                   </div>
                 </div>
-                <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Online</span>
+                <span className={`${hasError ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'} text-[10px] px-2 py-0.5 rounded-full font-bold uppercase`}>
+                  {hasError ? 'Offline' : 'Online'}
+                </span>
               </div>
 
               <div className="p-4 space-y-3 flex-grow min-h-[120px]">
