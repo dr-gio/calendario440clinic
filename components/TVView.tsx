@@ -135,25 +135,23 @@ const TVView: React.FC = () => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR */}
-        <aside className="w-[240px] bg-[#020617] border-r border-slate-900 flex flex-col p-5 overflow-y-auto">
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-[9px] font-black text-blue-500 uppercase tracking-[0.2em]">IA ANALYTICS</h2>
-              <span className="text-[8px] border border-blue-900 text-blue-500 px-2 py-0.5 rounded font-black">ACTIVO</span>
-            </div>
-            <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/50">
-              <p className="text-[12px] leading-relaxed italic text-slate-300 font-medium">
-                "Análisis en tiempo real habilitado para optimización de flujo médico."
+        <aside className="w-[200px] bg-[#020617] border-r border-slate-900 flex flex-col p-4 overflow-y-auto">
+          <div className="mb-6">
+            <h2 className="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] mb-3">IA INSIGHT</h2>
+            <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/50">
+              <p className="text-[10px] leading-relaxed italic text-slate-400 font-medium">
+                Optimización de flujo médico activa. Se detectan 2 conflictos potenciales de personal.
               </p>
             </div>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-[9px] font-black text-red-600 uppercase tracking-[0.2em] mb-4">CONFLICTOS</h2>
-            <div className="space-y-3">
-              <div className="p-4 rounded-xl border border-red-900/20 bg-red-950/5">
-                <p className="text-[10px] text-slate-400 leading-relaxed">
-                  Conflicto Sharon: Consultorio + Hidrash (04:30)
+          <div className="mb-6">
+            <h2 className="text-[8px] font-black text-red-600 uppercase tracking-[0.2em] mb-3">ALERTAS</h2>
+            <div className="space-y-2">
+              <div className="p-3 rounded-lg border border-red-900/20 bg-red-950/5">
+                <p className="text-[9px] text-slate-500 leading-tight">
+                  <span className="text-red-500 font-bold block mb-1">Conflicto Sharon:</span>
+                  Cita duplicada en Consultorio e Hidrash (04:30)
                 </p>
               </div>
             </div>
@@ -165,68 +163,62 @@ const TVView: React.FC = () => {
           {calendars.map(cal => {
             const { current, upcoming } = groupedEvents[cal.id] || { current: [], upcoming: [] };
             return (
-              <div key={cal.id} className="min-w-[280px] flex-1 border-r border-slate-900 flex flex-col last:border-r-0">
+              <div key={cal.id} className="min-w-[180px] flex-1 border-r border-slate-900 flex flex-col last:border-r-0">
                 {/* Column Header */}
-                <div className="p-5 border-b border-slate-900 bg-slate-900/10">
-                  <h3 className="text-xl font-bold text-white tracking-tight mb-0.5 truncate">{cal.label}</h3>
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest truncate">
+                <div className="p-3 border-b border-slate-900 bg-slate-900/20">
+                  <h3 className="text-sm font-black text-white tracking-tight truncate uppercase italic">{cal.label}</h3>
+                  <p className="text-[7px] text-slate-500 uppercase tracking-widest truncate font-bold">
                     {getSubLabel(cal.type)}
                   </p>
                 </div>
 
                 {/* EN CURSO / ESTADO ACTUAL */}
-                <div className="space-y-4 p-5 pb-2">
+                <div className="space-y-3 p-3 pb-1">
                   <div className="flex justify-between items-center">
-                    <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest">ESTADO</h4>
-                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${current.length > 0 ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}>
+                    <h4 className="text-[8px] font-black text-slate-600 uppercase tracking-widest">AHORA</h4>
+                    <span className={`text-[7px] font-black px-1 py-0.5 rounded-sm ${current.length > 0 ? 'bg-red-500/20 text-red-400 border border-red-500/20' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'}`}>
                       {current.length > 0 ? 'OCUPADO' : 'LIBRE'}
                     </span>
                   </div>
 
                   {current.length > 0 ? (
                     current.map(e => (
-                      <div key={e.id} className="p-5 rounded-2xl bg-blue-600 border-l-4 border-blue-400 shadow-lg flex flex-col justify-center min-h-[100px]">
-                        <div className="text-[10px] font-mono text-blue-100 mb-1 font-bold flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                      <div key={e.id} className="p-3 rounded-xl bg-blue-600 border-l-2 border-blue-400 shadow-md flex flex-col justify-center min-h-[70px]">
+                        <div className="text-[8px] font-mono text-blue-100 mb-0.5 font-bold">
                           {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(e.end).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
                         </div>
-                        <h5 className="text-lg font-black text-white leading-tight mb-1">{e.title}</h5>
+                        <h5 className="text-[11px] font-black text-white leading-tight truncate-2-lines">{e.title}</h5>
                       </div>
                     ))
                   ) : (
-                    <div className="p-4 rounded-xl bg-slate-900/30 border border-slate-800/30 flex flex-col items-center justify-center min-h-[80px] text-center">
-                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Disponible</span>
-                      {upcoming.length > 0 && (
-                        <p className="mt-1 text-[9px] font-bold text-blue-400/60">
-                          Prox: {new Date(upcoming[0].start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </p>
-                      )}
+                    <div className="p-3 rounded-lg bg-slate-900/20 border border-slate-800/20 flex flex-col items-center justify-center min-h-[60px] text-center">
+                      <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">DISPONIBLE</span>
                     </div>
                   )}
                 </div>
 
                 {/* PRÓXIMOS */}
-                <div className="space-y-3 p-5 pt-2 flex-1 overflow-y-auto no-scrollbar">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="text-[9px] font-black text-slate-600 uppercase tracking-widest">AGENDA</h4>
-                    <div className="h-px flex-1 bg-slate-900"></div>
+                <div className="space-y-2 p-3 pt-2 flex-1 overflow-y-auto no-scrollbar">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="text-[8px] font-black text-slate-700 uppercase tracking-widest">AGENDA</h4>
+                    <div className="h-[1px] flex-1 bg-slate-900"></div>
                   </div>
                   {upcoming.length > 0 ? (
-                    <div className="space-y-2">
-                      {upcoming.map((e, idx) => (
-                        <div key={e.id} className={`p-3 rounded-xl border transition-all ${idx === 0 ? 'bg-slate-900/60 border-slate-700' : 'bg-slate-900/20 border-slate-800/40 opacity-50'}`}>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-[9px] font-mono text-blue-400 font-bold">
+                    <div className="space-y-1.5 text-slate-400">
+                      {upcoming.slice(0, 10).map((e, idx) => (
+                        <div key={e.id} className={`p-2 rounded-lg border transition-all ${idx === 0 ? 'bg-slate-900/60 border-slate-700' : 'bg-slate-900/10 border-slate-800/30 opacity-60'}`}>
+                          <div className="flex justify-between items-center mb-0.5">
+                            <span className="text-[8px] font-mono text-blue-500 font-bold">
                               {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </span>
                           </div>
-                          <h5 className="text-xs font-bold text-slate-300 leading-tight">{e.title}</h5>
+                          <h5 className="text-[10px] font-bold leading-tight truncate">{e.title}</h5>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="h-10 flex items-center justify-center">
-                      <p className="text-[8px] font-black text-slate-800 uppercase tracking-widest italic text-center">Sin más citas</p>
+                    <div className="h-8 flex items-center justify-center">
+                      <p className="text-[7px] font-black text-slate-800 uppercase tracking-widest italic">FIN AGENDA</p>
                     </div>
                   )}
                 </div>
