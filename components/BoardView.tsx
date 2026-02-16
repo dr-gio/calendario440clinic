@@ -65,46 +65,49 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <header className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-6 text-center sm:text-left">
-        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-          <img src="/logo.png" alt="440 Clinic Logo" className="h-16 sm:h-24 w-auto object-contain" />
-          <div className="border-t sm:border-t-0 sm:border-l border-slate-200 pt-4 sm:pt-0 sm:pl-6">
+      <header className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-8 px-2">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 w-full sm:w-auto">
+          <img src="/logo.png" alt="440 Clinic Logo" className="h-20 sm:h-24 w-auto object-contain" />
+          <div className="hidden sm:block h-12 w-px bg-slate-200"></div>
+          <div className="text-center sm:text-left">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight uppercase">Agenda Diaria</h1>
-            <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-[0.2em]">Operating Control Center</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-[0.2em] mt-1 italic">440 Clinic Operational Center</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
           {session?.role === 'admin' && (
             <button
               onClick={() => window.location.hash = AppRoute.ADMIN}
-              className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-white transition-all text-sm font-medium shadow-sm text-slate-700"
+              className="flex-1 sm:flex-initial px-6 py-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all text-[11px] font-black uppercase tracking-widest shadow-sm text-slate-600"
             >
-              Configuración
+              Configurar
             </button>
           )}
           <button
             onClick={() => window.location.hash = AppRoute.TV}
-            className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all text-sm font-medium shadow-md flex items-center gap-2"
+            className="flex-1 sm:flex-initial px-6 py-3 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 transition-all text-[11px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 flex items-center justify-center gap-2"
           >
             <span>Modo TV</span>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
           </button>
-          <button onClick={onLogout} className="text-slate-400 hover:text-red-500 text-sm font-medium px-2 py-2">Salir</button>
+          <button onClick={onLogout} className="p-3 text-slate-300 hover:text-red-500 transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          </button>
         </div>
       </header>
 
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-8">
         <div className="flex flex-col lg:flex-row gap-6 items-stretch lg:items-center justify-between">
-          <div className="flex bg-slate-100 p-1 rounded-2xl overflow-x-auto no-scrollbar">
+          <div className="flex bg-slate-100 p-1 rounded-2xl overflow-x-auto no-scrollbar flex-nowrap">
             {(['resource', 'professional', 'general', 'all'] as const).map(type => (
               <button
                 key={type}
                 onClick={() => setSelectedType(type)}
-                className={`flex-1 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase whitespace-nowrap transition-all ${selectedType === type ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                className={`flex-1 px-6 sm:px-8 py-3 rounded-xl text-xs sm:text-sm font-black uppercase whitespace-nowrap transition-all ${selectedType === type ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-600'
                   }`}
               >
-                {type === 'resource' ? 'Salas' : type === 'professional' ? 'Doctores' : type === 'general' ? 'Otros' : 'Ver Todo'}
+                {type === 'resource' ? 'Salas' : type === 'professional' ? 'Doctores' : type === 'general' ? 'Otros' : 'Todo'}
               </button>
             ))}
           </div>
