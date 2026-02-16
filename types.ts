@@ -9,6 +9,7 @@ export interface CalendarConfig {
   active: boolean;
   showDetails: boolean;
   sort: number;
+  googleCalendarId?: string;
 }
 
 export interface CalendarEvent {

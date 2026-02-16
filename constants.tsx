@@ -14,6 +14,7 @@ export const DEFAULT_CALENDARS = [
     active: true,
     showDetails: true,
     sort: 1,
+    googleCalendarId: 'primary'
   },
   {
     id: 'procedimientos',
@@ -23,6 +24,7 @@ export const DEFAULT_CALENDARS = [
     active: true,
     showDetails: true,
     sort: 2,
+    googleCalendarId: 'primary'
   },
   {
     id: 'hiperbarica',
@@ -32,6 +34,7 @@ export const DEFAULT_CALENDARS = [
     active: true,
     showDetails: true,
     sort: 3,
+    googleCalendarId: 'primary'
   },
   {
     id: 'postoperatorio',
@@ -41,6 +44,7 @@ export const DEFAULT_CALENDARS = [
     active: true,
     showDetails: true,
     sort: 4,
+    googleCalendarId: 'primary'
   }
 ];
 

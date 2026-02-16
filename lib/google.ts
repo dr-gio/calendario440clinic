@@ -17,32 +17,44 @@ export async function fetchCalendarBoard(
     // or we might want to iterate through configs if each config maps to a calendar ID.
     // For now, let's assume we fetch events from the PRIMARY calendar or a specific one in env.
 
-    // Construct the URL with query params
-    const params = new URLSearchParams({ date });
+    // Fetch events for all active calendars in parallel
+    const eventPromises = configs.filter(c => c.active).map(async (config) => {
+      const params = new URLSearchParams({
+        date,
+        calendarId: config.googleCalendarId || 'primary'
+      });
 
-    // If you have multiple calendars to fetch, you might need to iterate or change the API to accept multiple IDs.
-    // For this implementation, we'll fetch from the default/primary env configured calendar.
-    const response = await fetch(`/api/calendar?${params.toString()}`);
+      try {
+        const response = await fetch(`/api/calendar?${params.toString()}`);
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
-    }
+        if (!response.ok) {
+          console.warn(`Failed to fetch for calendar ${config.label}: ${response.statusText}`);
+          return [];
+        }
 
-    const data = await response.json();
+        const data = await response.json();
 
-    // Normalize Google Calendar events to our app's structure
-    return data.map((event: any) => ({
-      id: event.id,
-      calendarId: 'primary', // or map from event organizer
-      calendarLabel: 'Agenda Clínica', // Default label
-      calendarType: 'general', // Default type
-      title: event.summary || 'Sin título',
-      start: event.start.dateTime || event.start.date,
-      end: event.end.dateTime || event.end.date,
-      location: event.location,
-      description: event.description,
-      source: 'events'
-    }));
+        // Normalize events and tag with local config metadata
+        return data.map((event: any) => ({
+          id: event.id,
+          calendarId: config.id, // Use our internal ID for mapping colors/rows
+          calendarLabel: config.label,
+          calendarType: config.type,
+          title: event.summary || 'Sin título',
+          start: event.start.dateTime || event.start.date,
+          end: event.end.dateTime || event.end.date,
+          location: event.location,
+          description: event.description,
+          source: 'events'
+        }));
+      } catch (err) {
+        console.error(`Error fetching calendar ${config.label}`, err);
+        return [];
+      }
+    });
+
+    const nestedEvents = await Promise.all(eventPromises);
+    return nestedEvents.flat();
   } catch (error) {
     console.error("Failed to fetch calendar events:", error);
     return []; // Return empty array on error to prevent app crash
