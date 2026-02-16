@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "google-auth-library": "^10.5.0",
+    "googleapis": "^171.4.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },

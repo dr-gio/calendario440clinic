@@ -32,7 +32,7 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
 
   useEffect(() => {
     loadEvents();
-    
+
     // Configurar refresco periódico cada 60 segundos
     const intervalId = setInterval(() => {
       loadEvents(true);
@@ -61,21 +61,24 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Agenda Diaria</h1>
-          <p className="text-slate-500 font-medium">440 Clinic — Operational Board</p>
+        <div className="flex items-center gap-4">
+          <img src="/logo.png" alt="440 Clinic Logo" className="h-[400px] w-auto object-contain" />
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Agenda Diaria</h1>
+            <p className="text-slate-500 font-medium">440 Clinic — Operational Board</p>
+          </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           {session?.role === 'admin' && (
-            <button 
+            <button
               onClick={() => window.location.hash = AppRoute.ADMIN}
               className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-white transition-all text-sm font-medium shadow-sm text-slate-700"
             >
               Configuración
             </button>
           )}
-          <button 
+          <button
             onClick={() => window.location.hash = AppRoute.TV}
             className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all text-sm font-medium shadow-md flex items-center gap-2"
           >
@@ -93,9 +96,8 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
               <button
                 key={type}
                 onClick={() => setSelectedType(type)}
-                className={`px-5 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${
-                  selectedType === type ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className={`px-5 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${selectedType === type ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
               >
                 {type === 'resource' ? 'Recursos' : type === 'professional' ? 'Profesionales' : type === 'general' ? 'General' : 'Todos'}
               </button>
@@ -103,13 +105,13 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-            <input 
+            <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none text-sm text-slate-900"
             />
-            <input 
+            <input
               placeholder="Buscar calendario..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -130,7 +132,7 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
               <div className="p-4 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 text-cyan-600">
-                    {cal.type === 'resource' ? <ICONS.Resource className="w-5 h-5"/> : cal.type === 'professional' ? <ICONS.Professional className="w-5 h-5"/> : <ICONS.General className="w-5 h-5"/>}
+                    {cal.type === 'resource' ? <ICONS.Resource className="w-5 h-5" /> : cal.type === 'professional' ? <ICONS.Professional className="w-5 h-5" /> : <ICONS.General className="w-5 h-5" />}
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 truncate max-w-[150px]">{cal.label}</h3>
@@ -139,7 +141,7 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
                 </div>
                 <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Online</span>
               </div>
-              
+
               <div className="p-4 space-y-3 flex-grow min-h-[120px]">
                 {groupedEvents[cal.id]?.length > 0 ? (
                   groupedEvents[cal.id].map(event => (
