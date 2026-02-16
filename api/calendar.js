@@ -7,7 +7,16 @@ export default async function handler(req, res) {
 
         // SECURITY: Use environment variables. Never hardcode keys.
         const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
-        const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'); // Handle newlines in ENV
+        // Robustly handle the private key from various ENV formats
+        let key = process.env.GOOGLE_PRIVATE_KEY;
+        if (key) {
+            // Remove surrounding quotes if present
+            key = key.replace(/^["']|["']$/g, '');
+            // Convert literal \n sequences to actual newlines if they exist
+            if (key.includes('\\n')) {
+                key = key.replace(/\\n/g, '\n');
+            }
+        }
         const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
         const projectId = process.env.GOOGLE_PROJECT_ID;
 

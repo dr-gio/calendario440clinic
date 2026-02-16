@@ -24,39 +24,31 @@ export async function fetchCalendarBoard(
         calendarId: config.googleCalendarId || 'primary'
       });
 
-      try {
-        const response = await fetch(`/api/calendar?${params.toString()}`);
-
-        if (!response.ok) {
-          throw new Error(`API Error: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        // Normalize events and tag with local config metadata
-        return data.map((event: any) => ({
-          id: event.id,
-          calendarId: config.id, // Use our internal ID for mapping colors/rows
-          calendarLabel: config.label,
-          calendarType: config.type,
-          title: event.summary || 'Sin título',
-          start: event.start.dateTime || event.start.date,
-          end: event.end.dateTime || event.end.date,
-          location: event.location,
-          description: event.description,
-          source: 'events'
-        }));
-      } catch (err) {
-        console.error(`Error fetching calendar ${config.label}`, err);
-        return [];
+      const response = await fetch(`/api/calendar?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.statusText}`);
       }
+
+      const data = await response.json();
+
+      return data.map((event: any) => ({
+        id: event.id,
+        calendarId: config.id,
+        calendarLabel: config.label,
+        calendarType: config.type,
+        title: event.summary || 'Sin título',
+        start: event.start.dateTime || event.start.date,
+        end: event.end.dateTime || event.end.date,
+        location: event.location,
+        description: event.description,
+        source: 'events'
+      }));
     });
 
     const nestedEvents = await Promise.all(eventPromises);
     return nestedEvents.flat();
   } catch (error) {
-    console.error("Failed to fetch calendar events:", error);
-    return []; // Return empty array on error to prevent app crash
+    throw error;
   }
 }
 
