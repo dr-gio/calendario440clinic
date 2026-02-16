@@ -135,23 +135,23 @@ const TVView: React.FC = () => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR */}
-        <aside className="w-[200px] bg-[#020617] border-r border-slate-900 flex flex-col p-4 overflow-y-auto">
-          <div className="mb-6">
-            <h2 className="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] mb-3">IA INSIGHT</h2>
-            <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/50">
-              <p className="text-[10px] leading-relaxed italic text-slate-400 font-medium">
-                Optimización de flujo médico activa. Se detectan 2 conflictos potenciales de personal.
+        <aside className="w-[160px] bg-[#020617] border-r border-slate-900 flex flex-col p-3 overflow-y-auto">
+          <div className="mb-4">
+            <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2">IA AGENT</h2>
+            <div className="p-2.5 rounded-lg bg-slate-900/40 border border-slate-800/50">
+              <p className="text-[9px] leading-tight italic text-slate-400 font-medium">
+                Flujo optimizado. 2 conflictos detectados.
               </p>
             </div>
           </div>
 
-          <div className="mb-6">
-            <h2 className="text-[8px] font-black text-red-600 uppercase tracking-[0.2em] mb-3">ALERTAS</h2>
-            <div className="space-y-2">
-              <div className="p-3 rounded-lg border border-red-900/20 bg-red-950/5">
-                <p className="text-[9px] text-slate-500 leading-tight">
-                  <span className="text-red-500 font-bold block mb-1">Conflicto Sharon:</span>
-                  Cita duplicada en Consultorio e Hidrash (04:30)
+          <div className="mb-4">
+            <h2 className="text-[7px] font-black text-red-600 uppercase tracking-widest mb-2">ALERTS</h2>
+            <div className="space-y-1.5">
+              <div className="p-2.5 rounded-lg border border-red-900/20 bg-red-950/5">
+                <p className="text-[8px] text-slate-500 leading-tight">
+                  <span className="text-red-500 font-bold block">Sharon:</span>
+                  Cita dupl. (04:30)
                 </p>
               </div>
             </div>
@@ -163,62 +163,62 @@ const TVView: React.FC = () => {
           {calendars.map(cal => {
             const { current, upcoming } = groupedEvents[cal.id] || { current: [], upcoming: [] };
             return (
-              <div key={cal.id} className="min-w-[180px] flex-1 border-r border-slate-900 flex flex-col last:border-r-0">
+              <div key={cal.id} className="min-w-[150px] flex-1 border-r border-slate-900 flex flex-col last:border-r-0">
                 {/* Column Header */}
-                <div className="p-3 border-b border-slate-900 bg-slate-900/20">
-                  <h3 className="text-sm font-black text-white tracking-tight truncate uppercase italic">{cal.label}</h3>
-                  <p className="text-[7px] text-slate-500 uppercase tracking-widest truncate font-bold">
+                <div className="p-2.5 border-b border-slate-900 bg-slate-900/40">
+                  <h3 className="text-[11px] font-black text-white tracking-tight truncate uppercase">{cal.label}</h3>
+                  <p className="text-[6px] text-slate-600 uppercase tracking-widest truncate font-black">
                     {getSubLabel(cal.type)}
                   </p>
                 </div>
 
                 {/* EN CURSO / ESTADO ACTUAL */}
-                <div className="space-y-3 p-3 pb-1">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-[8px] font-black text-slate-600 uppercase tracking-widest">AHORA</h4>
-                    <span className={`text-[7px] font-black px-1 py-0.5 rounded-sm ${current.length > 0 ? 'bg-red-500/20 text-red-400 border border-red-500/20' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'}`}>
-                      {current.length > 0 ? 'OCUPADO' : 'LIBRE'}
+                <div className="space-y-2 p-2.5 pb-1">
+                  <div className="flex justify-between items-center px-0.5">
+                    <h4 className="text-[7px] font-black text-slate-600 uppercase tracking-widest">LIVE</h4>
+                    <span className={`text-[6px] font-black px-1 py-0.5 rounded-sm ${current.length > 0 ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}>
+                      {current.length > 0 ? 'BUSY' : 'FREE'}
                     </span>
                   </div>
 
                   {current.length > 0 ? (
                     current.map(e => (
-                      <div key={e.id} className="p-3 rounded-xl bg-blue-600 border-l-2 border-blue-400 shadow-md flex flex-col justify-center min-h-[70px]">
-                        <div className="text-[8px] font-mono text-blue-100 mb-0.5 font-bold">
+                      <div key={e.id} className="p-2.5 rounded-lg bg-blue-600/90 border-l-2 border-blue-300 shadow-md flex flex-col justify-center min-h-[60px]">
+                        <div className="text-[7px] font-mono text-blue-50 text-center mb-0.5 font-black border-b border-blue-400/30 pb-0.5">
                           {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(e.end).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
                         </div>
-                        <h5 className="text-[11px] font-black text-white leading-tight truncate-2-lines">{e.title}</h5>
+                        <h5 className="text-[10px] font-black text-white leading-tight line-clamp-2 mt-1">{e.title}</h5>
                       </div>
                     ))
                   ) : (
-                    <div className="p-3 rounded-lg bg-slate-900/20 border border-slate-800/20 flex flex-col items-center justify-center min-h-[60px] text-center">
-                      <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">DISPONIBLE</span>
+                    <div className="py-6 rounded-lg bg-slate-900/20 border border-slate-800/10 flex items-center justify-center opacity-40">
+                      <span className="text-[8px] font-black text-slate-700 tracking-[0.3em] uppercase">READY</span>
                     </div>
                   )}
                 </div>
 
                 {/* PRÓXIMOS */}
-                <div className="space-y-2 p-3 pt-2 flex-1 overflow-y-auto no-scrollbar">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="text-[8px] font-black text-slate-700 uppercase tracking-widest">AGENDA</h4>
-                    <div className="h-[1px] flex-1 bg-slate-900"></div>
+                <div className="space-y-1.5 p-2.5 pt-1.5 flex-1 overflow-y-auto no-scrollbar">
+                  <div className="flex items-center gap-1.5 mb-1.5 px-0.5">
+                    <h4 className="text-[7px] font-black text-slate-800 uppercase tracking-widest">PLAN</h4>
+                    <div className="h-[1px] flex-1 bg-slate-900/50"></div>
                   </div>
                   {upcoming.length > 0 ? (
-                    <div className="space-y-1.5 text-slate-400">
-                      {upcoming.slice(0, 10).map((e, idx) => (
-                        <div key={e.id} className={`p-2 rounded-lg border transition-all ${idx === 0 ? 'bg-slate-900/60 border-slate-700' : 'bg-slate-900/10 border-slate-800/30 opacity-60'}`}>
+                    <div className="space-y-1">
+                      {upcoming.slice(0, 15).map((e, idx) => (
+                        <div key={e.id} className={`p-1.5 rounded-md border transition-all ${idx === 0 ? 'bg-slate-900/80 border-slate-700' : 'bg-slate-900/10 border-slate-800/20 opacity-40'}`}>
                           <div className="flex justify-between items-center mb-0.5">
-                            <span className="text-[8px] font-mono text-blue-500 font-bold">
+                            <span className="text-[7px] font-mono text-blue-500 font-black">
                               {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </span>
                           </div>
-                          <h5 className="text-[10px] font-bold leading-tight truncate">{e.title}</h5>
+                          <h5 className="text-[9px] font-bold leading-tight truncate text-slate-400">{e.title}</h5>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="h-8 flex items-center justify-center">
-                      <p className="text-[7px] font-black text-slate-800 uppercase tracking-widest italic">FIN AGENDA</p>
+                    <div className="h-4 flex items-center justify-center">
+                      <p className="text-[6px] font-black text-slate-900 uppercase italic">END</p>
                     </div>
                   )}
                 </div>
