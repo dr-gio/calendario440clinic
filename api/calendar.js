@@ -13,18 +13,19 @@ export default async function handler(req, res) {
             // Remove surrounding quotes if present
             key = key.replace(/^["']|["']$/g, '');
             // Convert literal \n sequences to actual newlines if they exist
-            if (key.includes('\\n')) {
-                key = key.replace(/\\n/g, '\n');
-            }
+            key = key.replace(/\\n/g, '\n');
         }
         const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-        const projectId = process.env.GOOGLE_PROJECT_ID;
 
         if (!key || !email) {
             const missing = !key ? 'GOOGLE_PRIVATE_KEY' : 'GOOGLE_SERVICE_ACCOUNT_EMAIL';
             console.error(`Missing Google Credential: ${missing}`);
             return res.status(500).json({ error: `Server configuration error: Missing ${missing}` });
         }
+
+        console.log(`Key length: ${key.length}`);
+        console.log(`Key start: ${key.substring(0, 25)}...`);
+        console.log(`Key end: ...${key.substring(key.length - 25)}`);
 
         const auth = new google.auth.JWT({
             email: email,
