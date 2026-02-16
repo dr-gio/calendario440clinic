@@ -62,7 +62,7 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div className="flex items-center gap-4">
-          <img src="/logo.png" alt="440 Clinic Logo" className="h-[400px] w-auto object-contain" />
+          <img src="/logo.png" alt="440 Clinic Logo" className="h-24 w-auto object-contain" />
           <div>
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Agenda Diaria</h1>
             <p className="text-slate-500 font-medium">440 Clinic — Operational Board</p>
