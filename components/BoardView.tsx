@@ -65,12 +65,12 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div className="flex items-center gap-4">
-          <img src="/logo.png" alt="440 Clinic Logo" className="h-24 w-auto object-contain" />
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Agenda Diaria</h1>
-            <p className="text-slate-500 font-medium">440 Clinic — Operational Board</p>
+      <header className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-6 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+          <img src="/logo.png" alt="440 Clinic Logo" className="h-16 sm:h-24 w-auto object-contain" />
+          <div className="border-t sm:border-t-0 sm:border-l border-slate-200 pt-4 sm:pt-0 sm:pl-6">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight uppercase">Agenda Diaria</h1>
+            <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-[0.2em]">Operating Control Center</p>
           </div>
         </div>
 
@@ -94,34 +94,37 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
         </div>
       </header>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
-        <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
-          <div className="flex bg-slate-100 p-1 rounded-xl w-full lg:w-auto">
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-8">
+        <div className="flex flex-col lg:flex-row gap-6 items-stretch lg:items-center justify-between">
+          <div className="flex bg-slate-100 p-1 rounded-2xl overflow-x-auto no-scrollbar">
             {(['resource', 'professional', 'general', 'all'] as const).map(type => (
               <button
                 key={type}
                 onClick={() => setSelectedType(type)}
-                className={`px-5 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${selectedType === type ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                className={`flex-1 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase whitespace-nowrap transition-all ${selectedType === type ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                   }`}
               >
-                {type === 'resource' ? 'Recursos' : type === 'professional' ? 'Profesionales' : type === 'general' ? 'General' : 'Todos'}
+                {type === 'resource' ? 'Salas' : type === 'professional' ? 'Doctores' : type === 'general' ? 'Otros' : 'Ver Todo'}
               </button>
             ))}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none text-sm text-slate-900"
+              className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-bold text-slate-900"
             />
-            <input
-              placeholder="Buscar calendario..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none text-sm min-w-[200px] text-slate-900"
-            />
+            <div className="relative flex-1">
+              <input
+                placeholder="Buscar por nombre..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-bold text-slate-900"
+              />
+              <svg className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
           </div>
         </div>
       </div>
@@ -131,22 +134,25 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredCalendars.map(cal => (
-            <div key={cal.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col hover:border-cyan-200 transition-colors">
-              <div className="p-4 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+            <div key={cal.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:border-blue-400 transition-all hover:shadow-xl hover:shadow-blue-500/5 group">
+              <div className="p-5 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 text-cyan-600">
+                  <div className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-blue-600 group-hover:scale-110 transition-transform">
                     {cal.type === 'resource' ? <ICONS.Resource className="w-5 h-5" /> : cal.type === 'professional' ? <ICONS.Professional className="w-5 h-5" /> : <ICONS.General className="w-5 h-5" />}
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900 truncate max-w-[150px]">{cal.label}</h3>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{cal.type}</p>
+                    <h3 className="font-black text-slate-900 leading-tight">{cal.label}</h3>
+                    <p className="text-[9px] text-slate-400 uppercase tracking-widest font-black">{cal.type}</p>
                   </div>
                 </div>
-                <span className={`${hasError ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'} text-[10px] px-2 py-0.5 rounded-full font-bold uppercase`}>
-                  {hasError ? 'Offline' : 'Online'}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className={`${hasError ? 'text-red-500' : 'text-emerald-500'} text-[9px] font-black uppercase tracking-tighter flex items-center gap-1`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${hasError ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+                    {hasError ? 'ERROR' : 'SINC'}
+                  </span>
+                </div>
               </div>
 
               <div className="p-4 space-y-3 flex-grow min-h-[120px]">
