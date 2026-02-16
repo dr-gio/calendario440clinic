@@ -8,19 +8,32 @@ const TVView: React.FC = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [calendars, setCalendars] = useState<CalendarConfig[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [hasError, setHasError] = useState(false);
 
-  const loadData = async () => {
+  const loadData = async (dateToLoad: string = selectedDate) => {
     const configs = storage.getCalendars();
     setCalendars(configs.filter(c => c.active).sort((a, b) => a.sort - b.sort));
     try {
-      const data = await fetchCalendarBoard(configs);
+      const data = await fetchCalendarBoard(configs, dateToLoad);
       setEvents(data);
       setHasError(false);
     } catch (e) {
       console.error("Refresh Error", e);
       setHasError(true);
     }
+  };
+
+  const handleDateChange = (newDate: string) => {
+    setSelectedDate(newDate);
+    loadData(newDate);
+  };
+
+  const shiftDate = (days: number) => {
+    const current = new Date(selectedDate + "T00:00:00");
+    current.setDate(current.getDate() + days);
+    const dateStr = current.toISOString().split('T')[0];
+    handleDateChange(dateStr);
   };
 
   useEffect(() => {
@@ -82,19 +95,53 @@ const TVView: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-12">
-          <button className="bg-[#2563eb] text-white text-[12px] font-black py-3 px-8 rounded-full flex items-center gap-3 shadow-2xl shadow-blue-900/40 hover:bg-blue-500 transition-all active:scale-95">
-            <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-              <span className="text-blue-600 font-bold text-[10px]">G</span>
+        <div className="flex items-center gap-6">
+          {/* NAVIGATION CONTROLS */}
+          <div className="flex items-center bg-slate-900/50 rounded-2xl p-1.5 border border-slate-800">
+            <button
+              onClick={() => shiftDate(-1)}
+              className="p-3 hover:bg-slate-800 rounded-xl transition-colors text-slate-400 hover:text-white"
+              title="Día Anterior"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="relative px-4 flex flex-col items-center min-w-[120px]">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => handleDateChange(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+              <span className="text-[10px] font-black text-blue-500 tracking-[0.2em] mb-1">FECHA</span>
+              <span className="text-lg font-black tracking-tight text-white uppercase italic">
+                {selectedDate === new Date().toISOString().split('T')[0] ? 'HOY' : selectedDate.split('-').reverse().join('/')}
+              </span>
             </div>
-            SINCRONIZAR CLÍNICA
+            <button
+              onClick={() => shiftDate(1)}
+              className="p-3 hover:bg-slate-800 rounded-xl transition-colors text-slate-400 hover:text-white"
+              title="Día Siguiente"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          <button
+            onClick={() => loadData()}
+            className="bg-[#2563eb] text-white text-[12px] font-black py-4 px-8 rounded-2xl flex items-center gap-3 shadow-2xl shadow-blue-900/40 hover:bg-blue-500 transition-all active:scale-95 uppercase tracking-widest"
+          >
+            Sincronizar
           </button>
 
-          <div className="text-right">
-            <div className="text-6xl font-black text-[#42a5f5] tabular-nums leading-none tracking-tight">
+          <div className="text-right border-l border-slate-800 pl-8">
+            <div className="text-5xl font-black text-[#42a5f5] tabular-nums leading-none tracking-tight">
               {currentTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
             </div>
-            <div className="text-[12px] font-extrabold text-slate-400 uppercase tracking-widest mt-1">
+            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2 bg-slate-900/40 px-3 py-1 rounded inline-block">
               {currentTime.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
             </div>
           </div>
