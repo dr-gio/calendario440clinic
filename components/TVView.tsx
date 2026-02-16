@@ -200,44 +200,69 @@ const TVView: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex-1 p-8 space-y-12">
-                  {/* EN CURSO */}
-                  <div className="space-y-6">
-                    <h4 className="text-[11px] font-black text-slate-600 uppercase tracking-widest">EN CURSO</h4>
-                    {current.length > 0 ? (
-                      current.map(e => (
-                        <div key={e.id} className="p-8 rounded-3xl bg-blue-600/10 border-2 border-blue-500/40 shadow-[0_0_50px_-10px_rgba(37,99,235,0.2)]">
-                          <div className="text-sm font-mono text-blue-400 mb-2 font-bold">
-                            {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                          </div>
-                          <h5 className="text-2xl font-bold text-white mb-2">{e.title}</h5>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="h-44 rounded-3xl border-2 border-dashed border-slate-800 flex items-center justify-center opacity-40">
-                        <span className="text-lg font-bold text-slate-500 uppercase tracking-[0.3em] italic">Disponible</span>
-                      </div>
-                    )}
+                {/* EN CURSO / ESTADO ACTUAL */}
+                <div className="space-y-6 p-8">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">ESTADO ACTUAL</h4>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${current.length > 0 ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'}`}>
+                      {current.length > 0 ? 'OCUPADO' : 'LIBRE'}
+                    </span>
                   </div>
 
-                  {/* PRÓXIMOS */}
-                  <div className="space-y-6">
-                    <h4 className="text-[11px] font-black text-slate-600 uppercase tracking-widest">PRÓXIMOS</h4>
-                    {upcoming.length > 0 ? (
-                      <div className="space-y-4">
-                        {upcoming.map(e => (
-                          <div key={e.id} className="p-6 rounded-2xl bg-slate-900/10 border border-slate-800/50">
-                            <span className="text-xs font-mono text-slate-500 block mb-1 font-bold">
+                  {current.length > 0 ? (
+                    current.map(e => (
+                      <div key={e.id} className="p-8 rounded-3xl bg-blue-600/10 border-2 border-blue-500/40 shadow-[0_0_50px_-10px_rgba(37,99,235,0.2)] flex flex-col justify-center min-h-[140px]">
+                        <div className="text-sm font-mono text-blue-400 mb-2 font-bold flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                          {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(e.end).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                        </div>
+                        <h5 className="text-2xl font-black text-white leading-tight">{e.title}</h5>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 rounded-3xl bg-slate-900/20 border border-slate-800/50 flex flex-col items-center justify-center min-h-[140px] text-center group">
+                      <div className="w-12 h-12 rounded-full bg-emerald-500/5 mb-4 flex items-center justify-center border border-emerald-500/10 group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-emerald-500/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-black text-slate-500 uppercase tracking-[0.2em]">Disponible</span>
+                      {upcoming.length > 0 && (
+                        <p className="mt-3 text-[10px] font-bold text-blue-400/60 uppercase tracking-widest">
+                          Próxima cita a las {new Date(upcoming[0].start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* PRÓXIMOS */}
+                <div className="space-y-6 p-8 flex-1">
+                  <div className="flex items-center gap-3">
+                    <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">PROGRAMACIÓN</h4>
+                    <div className="h-px flex-1 bg-slate-900"></div>
+                  </div>
+                  {upcoming.length > 0 ? (
+                    <div className="space-y-4">
+                      {upcoming.map((e, idx) => (
+                        <div key={e.id} className={`p-6 rounded-2xl border transition-all ${idx === 0 ? 'bg-slate-900/40 border-slate-700' : 'bg-slate-900/10 border-slate-800/50 opacity-60'}`}>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-xs font-mono text-blue-400 font-bold">
                               {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </span>
-                            <h5 className="text-lg font-bold text-slate-300">{e.title}</h5>
+                            {idx === 0 && (
+                              <span className="text-[9px] font-black bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded uppercase tracking-tighter border border-blue-500/20">A continuación</span>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm font-bold text-slate-800 uppercase tracking-widest italic">Sin más citas hoy</p>
-                    )}
-                  </div>
+                          <h5 className="text-lg font-bold text-slate-300">{e.title}</h5>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="h-20 flex items-center justify-center">
+                      <p className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em] italic">Sin más citas programadas</p>
+                    </div>
+                  )}
                 </div>
               </div>
             );
