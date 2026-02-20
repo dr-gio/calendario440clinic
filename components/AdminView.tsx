@@ -210,6 +210,11 @@ const AdminView: React.FC<AdminViewProps> = ({ session, onLogout }) => {
               <div className="text-4xl font-black text-blue-600">{calendars.filter(c => c.type === 'professional').length}</div>
               <p className="text-xs text-slate-500 mt-2">Especialistas activos</p>
             </div>
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-pink-600">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Esteticistas</span>
+              <div className="text-4xl font-black">{calendars.filter(c => c.type === 'aesthetic').length}</div>
+              <p className="text-xs text-slate-500 mt-2">Personal de estética</p>
+            </div>
             <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estado IA</span>
               <div className="text-4xl font-black text-emerald-500">{apiKey ? 'ON' : 'OFF'}</div>
@@ -383,7 +388,8 @@ const AdminView: React.FC<AdminViewProps> = ({ session, onLogout }) => {
                   >
                     <option value="resource">Sala / Recurso</option>
                     <option value="professional">Profesional</option>
-                    <option value="general">Equipo / Equipo</option>
+                    <option value="aesthetic">Esteticista</option>
+                    <option value="general">Otros / Equipos</option>
                   </select>
                 </div>
 
@@ -438,7 +444,9 @@ const AdminView: React.FC<AdminViewProps> = ({ session, onLogout }) => {
                       </td>
                       <td className="px-8 py-5">
                         <span className={`text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest ${cal.type === 'professional' ? 'bg-purple-100 text-purple-600' :
-                          cal.type === 'resource' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-600'
+                            cal.type === 'aesthetic' ? 'bg-pink-100 text-pink-600' :
+                              cal.type === 'resource' ? 'bg-blue-100 text-blue-600' :
+                                'bg-slate-100 text-slate-600'
                           }`}>
                           {cal.type}
                         </span>

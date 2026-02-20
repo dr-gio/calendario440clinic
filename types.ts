@@ -1,5 +1,5 @@
 
-export type CalendarType = 'resource' | 'professional' | 'general';
+export type CalendarType = 'resource' | 'professional' | 'general' | 'aesthetic';
 
 export interface CalendarConfig {
   id: string;
