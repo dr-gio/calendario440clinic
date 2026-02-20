@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.95.3",
     "google-auth-library": "^10.5.0",
     "googleapis": "^171.4.0",
     "react": "^19.2.4",

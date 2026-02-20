@@ -19,31 +19,40 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [hasError, setHasError] = useState(false);
 
-  const loadEvents = async (silent = false) => {
-    if (!silent) setLoading(true);
+  const loadData = async (dateToLoad: string = selectedDate) => {
+    setLoading(true);
     try {
-      const configs = storage.getCalendars();
-      setCalendars(configs.sort((a, b) => a.sort - b.sort));
-      const data = await fetchCalendarBoard(configs, selectedDate);
+      const configs = await storage.getCalendars();
+      setCalendars(configs.filter(c => c.active).sort((a, b) => a.sort - b.sort));
+      const data = await fetchCalendarBoard(configs, dateToLoad);
       setEvents(data);
       setHasError(false);
-    } catch (error) {
-      console.error("Load Events Error", error);
+    } catch (e) {
+      console.error("Refresh Error", e);
       setHasError(true);
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadEvents();
+    // Suscripción Realtime
+    const subscription = storage.subscribeToCalendarChanges(() => {
+      console.log("Realtime: Refreshing Board View");
+      loadData();
+    });
+
+    loadData();
 
     // Configurar refresco periódico cada 60 segundos
     const intervalId = setInterval(() => {
-      loadEvents(true);
+      loadData();
     }, 60000);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(intervalId);
+    };
   }, [selectedDate]);
 
   const filteredCalendars = useMemo(() => {
@@ -142,8 +151,16 @@ const BoardView: React.FC<BoardViewProps> = ({ session, onLogout }) => {
             <div key={cal.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:border-blue-400 transition-all hover:shadow-xl hover:shadow-blue-500/5 group">
               <div className="p-5 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-blue-600 group-hover:scale-110 transition-transform">
-                    {cal.type === 'resource' ? <ICONS.Resource className="w-5 h-5" /> : cal.type === 'professional' ? <ICONS.Professional className="w-5 h-5" /> : <ICONS.General className="w-5 h-5" />}
+                  <div className="relative group-hover:scale-110 transition-transform">
+                    {cal.avatarUrl ? (
+                      <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-white shadow-md">
+                        <img src={cal.avatarUrl} alt={cal.label} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-blue-600">
+                        {cal.type === 'resource' ? <ICONS.Resource className="w-5 h-5" /> : cal.type === 'professional' ? <ICONS.Professional className="w-5 h-5" /> : <ICONS.General className="w-5 h-5" />}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <h3 className="font-black text-slate-900 leading-tight">{cal.label}</h3>

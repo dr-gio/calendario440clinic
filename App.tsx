@@ -41,11 +41,11 @@ const App: React.FC = () => {
     const newSession: AuthSession = {
       user,
       role,
-      expiresAt: Date.now() + 1000 * 60 * 60 * 24 // 24h
+      expiresAt: Date.now() + 1000 * 60 * 60 * 24 * 30 // 30 días de sesión
     };
     setSession(newSession);
     localStorage.setItem('clinic_session', JSON.stringify(newSession));
-    
+
     // Redirect after login if needed
     if (currentRoute === AppRoute.LOGIN) {
       window.location.hash = AppRoute.HOME;

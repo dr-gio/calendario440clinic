@@ -8,24 +8,36 @@ export default async function handler(req, res) {
         // SECURITY: Use environment variables. Never hardcode keys.
         const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
         // Robustly handle the private key from various ENV formats
-        let key = process.env.GOOGLE_PRIVATE_KEY;
-        if (key) {
-            // Remove surrounding quotes if present
-            key = key.replace(/^["']|["']$/g, '');
-            // Convert literal \n sequences to actual newlines if they exist
-            key = key.replace(/\\n/g, '\n');
-        }
         const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+        let key = process.env.GOOGLE_PRIVATE_KEY;
+
+        console.log('--- Env Debug ---');
+        console.log('Email defined:', !!email);
+        console.log('Key defined:', !!key);
+        if (email) console.log('Email length:', email.length);
+        if (key) {
+            console.log('Key length:', key.length);
+            console.log('Key starts with:', key.substring(0, 30));
+        }
+        console.log('-----------------');
 
         if (!key || !email) {
             const missing = !key ? 'GOOGLE_PRIVATE_KEY' : 'GOOGLE_SERVICE_ACCOUNT_EMAIL';
             console.error(`Missing Google Credential: ${missing}`);
-            return res.status(500).json({ error: `Server configuration error: Missing ${missing}` });
+            return res.status(500).json({
+                error: `Server configuration error: Missing ${missing}`,
+                debug: {
+                    emailDefined: !!email,
+                    keyDefined: !!key,
+                    emailLen: email ? email.length : 0,
+                    keyLen: key ? key.length : 0
+                }
+            });
         }
 
-        console.log(`Key length: ${key.length}`);
-        console.log(`Key start: ${key.substring(0, 25)}...`);
-        console.log(`Key end: ...${key.substring(key.length - 25)}`);
+        // Format key
+        key = key.replace(/^["']|["']$/g, '');
+        key = key.replace(/\\n/g, '\n');
 
         const auth = new google.auth.JWT({
             email: email,

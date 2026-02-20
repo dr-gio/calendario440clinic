@@ -14,12 +14,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     e.preventDefault();
     setError('');
 
-    // In a real app, these are env vars VIEWER_USER/PASS and ADMIN_USER/PASS
-    // For demo purposes, we check static values:
+    // Simplificación: Un solo usuario maestro para todo el sistema
     if (username === 'admin' && password === 'admin440') {
-      onLogin(username, 'admin');
-    } else if (username === 'viewer' && password === 'clinic440') {
-      onLogin(username, 'viewer');
+      onLogin('440 Clinic', 'admin');
     } else {
       setError('Credenciales incorrectas');
     }
@@ -29,8 +26,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     <div className="flex items-center justify-center min-h-screen bg-slate-100 px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-slate-900">440 Clinic</h1>
-          <p className="text-slate-500 mt-2">Operational Board Login</p>
+          <img src="/logo.png" alt="440 Clinic Logo" className="h-20 mx-auto mb-6 object-contain" />
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">440 Clinic</h1>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2 italic">Operational Board Login</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -65,9 +63,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </button>
         </form>
 
-        <div className="text-xs text-slate-400 text-center space-y-1">
-          <p>Demo Admin: admin / admin440</p>
-          <p>Demo Viewer: viewer / clinic440</p>
+        <div className="text-[10px] text-slate-300 text-center uppercase tracking-widest font-bold">
+          <p>© 2026 440 Clinic Operational System</p>
         </div>
       </div>
     </div>

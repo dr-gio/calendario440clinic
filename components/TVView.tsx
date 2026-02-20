@@ -10,14 +10,83 @@ const TVView: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [hasError, setHasError] = useState(false);
+  const [aiInsight, setAiInsight] = useState("Sincronizando flujo...");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [lastAiRun, setLastAiRun] = useState<number>(0);
+  const [filterType, setFilterType] = useState<'all' | 'professional' | 'resource' | 'general'>(() => {
+    // 1. Prioridad: Parámetro URL (?filter=resource)
+    const params = new URLSearchParams(window.location.search);
+    const urlFilter = params.get('filter') as any;
+    if (urlFilter && ['all', 'professional', 'resource', 'general'].includes(urlFilter)) return urlFilter;
+
+    // 2. Backup: LocalStorage (persistencia por pantalla)
+    const saved = localStorage.getItem('tv_filter_type');
+    if (saved && ['all', 'professional', 'resource', 'general'].includes(saved)) return saved as any;
+
+    return 'all';
+  });
+
+  const updateFilter = (type: 'all' | 'professional' | 'resource' | 'general') => {
+    setFilterType(type);
+    localStorage.setItem('tv_filter_type', type);
+  };
+
+  const runAIAnalysis = async (currentEvents: CalendarEvent[]) => {
+    // 1. Cooldown Check: Solo analizar si han pasado más de 10 minutos (600,000 ms)
+    const now = Date.now();
+    if (now - lastAiRun < 600000 && lastAiRun !== 0) {
+      console.log("AI analysis skipped (cooldown active)");
+      return;
+    }
+
+    if (currentEvents.length === 0) {
+      setAiInsight("Sin eventos para analizar.");
+      return;
+    }
+
+    setIsAiLoading(true);
+    try {
+      // 2. Data Cleaning: Enviamos solo lo estrictamente necesario para ahorrar tokens
+      // Quitamos descripciones, locaciones, ids largos, etc.
+      const slimEvents = currentEvents.map(e => ({
+        cal: e.calendarId,
+        t: e.title,
+        s: e.start.split('T')[1]?.substring(0, 5) || e.start, // Solo HH:mm si es posible
+        e: e.end.split('T')[1]?.substring(0, 5) || e.end
+      }));
+
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ events: slimEvents, date: selectedDate })
+      });
+
+      if (response.ok) {
+        const { insight, hasConflicts } = await response.json();
+        setAiInsight(insight);
+        setLastAiRun(now);
+      } else {
+        setAiInsight("Análisis no disponible.");
+      }
+    } catch (e) {
+      console.warn("AI Error", e);
+      setAiInsight("Reintentando conexión...");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   const loadData = async (dateToLoad: string = selectedDate) => {
-    const configs = storage.getCalendars();
-    setCalendars(configs.filter(c => c.active).sort((a, b) => a.sort - b.sort));
     try {
-      const data = await fetchCalendarBoard(configs, dateToLoad);
+      const configs = await storage.getCalendars();
+      const activeConfigs = configs.filter(c => c.active);
+      setCalendars(activeConfigs.sort((a, b) => a.sort - b.sort));
+      const data = await fetchCalendarBoard(activeConfigs, dateToLoad);
       setEvents(data);
       setHasError(false);
+
+      // Trigger AI analysis every time data loads (limit frequency if needed)
+      runAIAnalysis(data);
     } catch (e) {
       console.error("Refresh Error", e);
       setHasError(true);
@@ -37,18 +106,29 @@ const TVView: React.FC = () => {
   };
 
   useEffect(() => {
+    // Suscripción Realtime
+    const subscription = storage.subscribeToCalendarChanges(() => {
+      console.log("Realtime: Refreshing TV View due to configuration change");
+      loadData();
+    });
+
     loadData();
     const interval = setInterval(loadData, 60000);
     const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => {
+      subscription.unsubscribe();
       clearInterval(interval);
       clearInterval(timeInterval);
     };
   }, []);
 
+  const filteredCalendars = useMemo(() => {
+    return calendars.filter(c => filterType === 'all' || c.type === filterType);
+  }, [calendars, filterType]);
+
   const groupedEvents = useMemo(() => {
     const groups: Record<string, { current: CalendarEvent[], upcoming: CalendarEvent[] }> = {};
-    calendars.forEach(cal => {
+    filteredCalendars.forEach(cal => {
       const calEvents = events.filter(e => e.calendarId === cal.id);
       const now = currentTime.getTime();
       groups[cal.id] = {
@@ -61,14 +141,14 @@ const TVView: React.FC = () => {
       };
     });
     return groups;
-  }, [events, calendars, currentTime]);
+  }, [events, filteredCalendars, currentTime]);
 
   const getSubLabel = (type: string) => {
     switch (type) {
       case 'professional': return 'ESPECIALISTA';
       case 'general': return 'EQUIPAMIENTO';
       case 'resource':
-      default: return 'SALA DE CONSULTA';
+      default: return 'SALA / RECURSO';
     }
   };
 
@@ -80,9 +160,7 @@ const TVView: React.FC = () => {
       {/* HEADER */}
       <header className="h-20 flex items-center justify-between px-8 border-b border-slate-900 bg-[#020617] relative">
         <div className="flex items-center gap-6">
-          <div className="bg-white px-2 py-1 rounded flex items-center justify-center">
-            <span className="text-[#020617] font-black italic text-xl tracking-tighter">440CLINIC</span>
-          </div>
+          <img src="/logo.png" alt="440 Clinic Logo" className="h-12 w-auto object-contain bg-white p-1 rounded-lg" />
           <div className="h-8 w-[1px] bg-slate-800"></div>
           <div>
             <h1 className="text-xl font-black tracking-widest text-white leading-none">MONITOR OPERATIVO</h1>
@@ -136,40 +214,96 @@ const TVView: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR */}
         <aside className="w-[160px] bg-[#020617] border-r border-slate-900 flex flex-col p-3 overflow-y-auto">
-          <div className="mb-4">
-            <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2">IA AGENT</h2>
-            <div className="p-2.5 rounded-lg bg-slate-900/40 border border-slate-800/50">
+          <div className={`mb-4 transition-all duration-500 ${isAiLoading ? 'opacity-100 scale-[1.02]' : 'opacity-90'}`}>
+            <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2 flex justify-between items-center px-0.5">
+              <span className="flex items-center gap-1.5">
+                <span className="relative flex h-1.5 w-1.5">
+                  {isAiLoading && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>}
+                  <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isAiLoading ? 'bg-blue-500' : 'bg-blue-900/50'}`}></span>
+                </span>
+                IA AGENT
+              </span>
+              {isAiLoading && <span className="text-[5px] animate-pulse">ANALYZING...</span>}
+            </h2>
+            <div className={`p-2.5 rounded-lg border transition-all duration-500 ${isAiLoading ? 'bg-blue-950/20 border-blue-500/30' : 'bg-slate-900/40 border-slate-800/50'}`}>
               <p className="text-[9px] leading-tight italic text-slate-400 font-medium">
-                Flujo optimizado. 2 conflictos detectados.
+                {aiInsight}
               </p>
             </div>
           </div>
 
           <div className="mb-4">
-            <h2 className="text-[7px] font-black text-red-600 uppercase tracking-widest mb-2">ALERTS</h2>
+            <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2 px-0.5">FILTRAR VISTA</h2>
             <div className="space-y-1.5">
-              <div className="p-2.5 rounded-lg border border-red-900/20 bg-red-950/5">
-                <p className="text-[8px] text-slate-500 leading-tight">
-                  <span className="text-red-500 font-bold block">Sharon:</span>
-                  Cita dupl. (04:30)
-                </p>
-              </div>
+              {[
+                { id: 'all', label: 'TODO', icon: 'M4 6h16M4 12h16M4 18h16' },
+                { id: 'professional', label: 'DOCTORES', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+                { id: 'resource', label: 'SALAS', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+                { id: 'general', label: 'OTROS', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => updateFilter(t.id as any)}
+                  className={`w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${filterType === t.id
+                    ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20'
+                    : 'bg-slate-900/40 border-slate-800/50 text-slate-400 hover:border-slate-700'
+                    }`}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={t.icon} />
+                  </svg>
+                  <span className="text-[8px] font-black uppercase tracking-widest">{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <h2 className="text-[7px] font-black text-red-600 uppercase tracking-widest mb-2 px-0.5">ALERTS</h2>
+            <div className="space-y-1.5">
+              {(!aiInsight.toLowerCase().includes("sin conflictos") && !isAiLoading && aiInsight !== "Sincronizando flujo...") ? (
+                <div className="p-2.5 rounded-lg border border-red-500 bg-red-500/10 animate-pulse">
+                  <p className="text-[10px] text-red-500 font-black leading-tight uppercase italic mb-1">
+                    Atención Requerida
+                  </p>
+                  <p className="text-[8px] text-red-200/80 leading-tight">
+                    La IA ha detectado posibles conflictos en la agenda.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-lg border border-slate-800 bg-slate-900/40 opacity-50">
+                  <p className="text-[8px] text-slate-500 font-bold leading-tight uppercase italic">
+                    Sistema OK
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </aside>
 
         {/* MAIN GRID */}
         <main className="flex-1 flex overflow-x-auto bg-[#020617] no-scrollbar">
-          {calendars.map(cal => {
+          {filteredCalendars.map(cal => {
             const { current, upcoming } = groupedEvents[cal.id] || { current: [], upcoming: [] };
             return (
               <div key={cal.id} className="min-w-[150px] flex-1 border-r border-slate-900 flex flex-col last:border-r-0">
                 {/* Column Header */}
-                <div className="p-2.5 border-b border-slate-900 bg-slate-900/40">
-                  <h3 className="text-[11px] font-black text-white tracking-tight truncate uppercase">{cal.label}</h3>
-                  <p className="text-[6px] text-slate-600 uppercase tracking-widest truncate font-black">
-                    {getSubLabel(cal.type)}
-                  </p>
+                <div className="p-4 border-b border-slate-900 bg-slate-900/40 flex flex-col items-center gap-3 text-center">
+                  {cal.avatarUrl ? (
+                    <img src={cal.avatarUrl} alt={cal.label} className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-700 shadow-md mb-1" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-2xl bg-slate-800 flex items-center justify-center text-lg font-black text-slate-500 border-2 border-slate-700 mb-1">
+                      {cal.label.substring(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="w-full">
+                    <h3 className="text-[12px] font-black text-white tracking-tight uppercase leading-tight">
+                      {cal.label}
+                    </h3>
+                    <p className="text-[8px] text-blue-500/80 uppercase tracking-widest font-black mt-1">
+                      {getSubLabel(cal.type)}
+                    </p>
+                  </div>
                 </div>
 
                 {/* EN CURSO / ESTADO ACTUAL */}

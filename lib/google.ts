@@ -19,30 +19,36 @@ export async function fetchCalendarBoard(
 
     // Fetch events for all active calendars in parallel
     const eventPromises = configs.filter(c => c.active).map(async (config) => {
-      const params = new URLSearchParams({
-        date,
-        calendarId: config.googleCalendarId || 'primary'
-      });
+      try {
+        const params = new URLSearchParams({
+          date,
+          calendarId: config.googleCalendarId || 'primary'
+        });
 
-      const response = await fetch(`/api/calendar?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
+        const response = await fetch(`/api/calendar?${params.toString()}`);
+        if (!response.ok) {
+          console.warn(`Failed to fetch calendar ${config.label}: ${response.statusText}`);
+          return [];
+        }
+
+        const data = await response.json();
+
+        return data.map((event: any) => ({
+          id: event.id,
+          calendarId: config.id,
+          calendarLabel: config.label,
+          calendarType: config.type,
+          title: event.summary || 'Sin título',
+          start: event.start.dateTime || event.start.date,
+          end: event.end.dateTime || event.end.date,
+          location: event.location,
+          description: event.description,
+          source: 'events'
+        }));
+      } catch (e) {
+        console.error(`Error fetching calendar ${config.label}:`, e);
+        return [];
       }
-
-      const data = await response.json();
-
-      return data.map((event: any) => ({
-        id: event.id,
-        calendarId: config.id,
-        calendarLabel: config.label,
-        calendarType: config.type,
-        title: event.summary || 'Sin título',
-        start: event.start.dateTime || event.start.date,
-        end: event.end.dateTime || event.end.date,
-        location: event.location,
-        description: event.description,
-        source: 'events'
-      }));
     });
 
     const nestedEvents = await Promise.all(eventPromises);

@@ -10,6 +10,7 @@ export interface CalendarConfig {
   showDetails: boolean;
   sort: number;
   googleCalendarId?: string;
+  avatarUrl?: string;
 }
 
 export interface CalendarEvent {
