@@ -46,46 +46,50 @@ export async function fetchCalendarBoard(
           // Si el calendario es tipo 'resource' (sala o equipo), extraer qué profesional lo utiliza
           if (config.type === 'resource' || config.type === 'general') {
 
-            // 1. Buscar si algún profesional asignado está en los invitados (attendees)
-            const professionalAtt = event.attendees?.find((att: any) => {
-              const matchedConfig = configs.find(c => c.googleCalendarId === att.email);
-              return matchedConfig && (matchedConfig.type === 'professional' || matchedConfig.type === 'aesthetic');
-            });
+            let possibleProfessionalEmail = '';
+            let possibleProfessionalName = '';
 
-            if (professionalAtt) {
-              const matchedConfig = configs.find(c => c.googleCalendarId === professionalAtt.email);
-              finalBooker = matchedConfig?.label || professionalAtt.displayName || professionalAtt.email.split('@')[0];
+            // 1. Si el organizador NO es la sala misma, el organizador es el dueño del 
+            // calendario donde se creó el evento. Si la secretaria agendó en el calendario 
+            // del profesional y luego invitó a la sala, el PROFESIONAL es el organizador.
+            if (event.organizer && event.organizer.email !== config.googleCalendarId) {
+              possibleProfessionalEmail = event.organizer.email;
+              possibleProfessionalName = event.organizer.displayName || possibleProfessionalEmail.split('@')[0];
             } else {
-              // 2. Si la secretaria creó el evento directamente en el calendario del profesional
-              // e invitó a la sala, el organizador (organizer) será el profesional.
-              const organizerEmail = event.organizer?.email;
-              const matchOrganizer = configs.find(c =>
-                c.googleCalendarId === organizerEmail &&
-                (c.type === 'professional' || c.type === 'aesthetic')
+              // 2. Si la sala es el organizador (se creó directo en la sala), buscamos en invitados
+              const humanAtt = event.attendees?.find((att: any) =>
+                !att.resource && att.email !== config.googleCalendarId && !att.self
               );
-
-              if (matchOrganizer) {
-                finalBooker = matchOrganizer.label;
+              if (humanAtt) {
+                possibleProfessionalEmail = humanAtt.email;
+                possibleProfessionalName = humanAtt.displayName || humanAtt.email.split('@')[0];
               } else {
-                // 3. Buscar cualquier humano que no sea la sala misma
-                const humanAtt = event.attendees?.find((att: any) =>
-                  !att.resource && att.email !== config.googleCalendarId && !att.self
-                );
-
-                if (humanAtt) {
-                  finalBooker = humanAtt.displayName || humanAtt.email.split('@')[0];
-                } else {
-                  // 4. Como último recurso, el creador directo del evento
-                  const creatorName = event.creator?.displayName || event.organizer?.displayName;
-                  const creatorEmail = event.creator?.email || event.organizer?.email;
-                  finalBooker = creatorName || (creatorEmail ? creatorEmail.split('@')[0] : '');
-                }
+                // 3. Como último recurso, el creador (que suele ser la secretaria, evitamos esto si es posible)
+                possibleProfessionalEmail = event.creator?.email || '';
+                possibleProfessionalName = event.creator?.displayName || possibleProfessionalEmail.split('@')[0];
               }
             }
 
-            // Si el título ya incluía a mano el nombre del doctor (ej. "Dr Gio - Juan Perez"), limpiarlo
+            // Intentar cruzar el email encontrado con nuestra configuración para usar el "label" oficial
+            const matchedConfig = configs.find(c =>
+              c.googleCalendarId && possibleProfessionalEmail &&
+              c.googleCalendarId.toLowerCase() === possibleProfessionalEmail.toLowerCase() &&
+              (c.type === 'professional' || c.type === 'aesthetic')
+            );
+
+            // Asignar el nombre final
+            finalBooker = matchedConfig?.label || possibleProfessionalName || 'Profesional';
+
+            // Limpiar el título para no mostrar duplicados (ej: "Dr Gio - Consulta" -> "Consulta")
             if (finalBooker && title.toLowerCase().startsWith(finalBooker.toLowerCase() + ' - ')) {
-              title = title.substring(finalBooker.length + 3);
+              title = title.substring(finalBooker.length + 3).trim();
+            } else if (finalBooker && title.includes(' - ')) {
+              // Limpieza adicional si hay guiones pero no coinciden exactamente
+              const parts = title.split(' - ');
+              if (finalBooker.toLowerCase().includes(parts[0].toLowerCase().trim()) ||
+                parts[0].toLowerCase().trim().includes(finalBooker.toLowerCase())) {
+                title = parts.slice(1).join(' - ').trim();
+              }
             }
           }
 
