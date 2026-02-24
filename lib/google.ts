@@ -56,18 +56,30 @@ export async function fetchCalendarBoard(
               const matchedConfig = configs.find(c => c.googleCalendarId === professionalAtt.email);
               finalBooker = matchedConfig?.label || professionalAtt.displayName || professionalAtt.email.split('@')[0];
             } else {
-              // 2. Si no hay profesionales conocidos, buscar cualquier humano que no sea la sala misma
-              const humanAtt = event.attendees?.find((att: any) =>
-                !att.resource && att.email !== config.googleCalendarId && !att.self
+              // 2. Si la secretaria creó el evento directamente en el calendario del profesional
+              // e invitó a la sala, el organizador (organizer) será el profesional.
+              const organizerEmail = event.organizer?.email;
+              const matchOrganizer = configs.find(c =>
+                c.googleCalendarId === organizerEmail &&
+                (c.type === 'professional' || c.type === 'aesthetic')
               );
 
-              if (humanAtt) {
-                finalBooker = humanAtt.displayName || humanAtt.email.split('@')[0];
+              if (matchOrganizer) {
+                finalBooker = matchOrganizer.label;
               } else {
-                // 3. Como último recurso, el organizador (que podría ser recepción)
-                const creatorName = event.creator?.displayName || event.organizer?.displayName;
-                const creatorEmail = event.creator?.email || event.organizer?.email;
-                finalBooker = creatorName || (creatorEmail ? creatorEmail.split('@')[0] : '');
+                // 3. Buscar cualquier humano que no sea la sala misma
+                const humanAtt = event.attendees?.find((att: any) =>
+                  !att.resource && att.email !== config.googleCalendarId && !att.self
+                );
+
+                if (humanAtt) {
+                  finalBooker = humanAtt.displayName || humanAtt.email.split('@')[0];
+                } else {
+                  // 4. Como último recurso, el creador directo del evento
+                  const creatorName = event.creator?.displayName || event.organizer?.displayName;
+                  const creatorEmail = event.creator?.email || event.organizer?.email;
+                  finalBooker = creatorName || (creatorEmail ? creatorEmail.split('@')[0] : '');
+                }
               }
             }
 
