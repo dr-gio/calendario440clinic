@@ -46,39 +46,43 @@ export async function fetchCalendarBoard(
           // Si el calendario es tipo 'resource' (sala o equipo), extraer qué profesional lo utiliza
           if (config.type === 'resource' || config.type === 'general') {
 
-            let possibleProfessionalEmail = '';
-            let possibleProfessionalName = '';
-
-            // 1. Si el organizador NO es la sala misma, el organizador es el dueño del 
-            // calendario donde se creó el evento. Si la secretaria agendó en el calendario 
-            // del profesional y luego invitó a la sala, el PROFESIONAL es el organizador.
-            if (event.organizer && event.organizer.email !== config.googleCalendarId) {
-              possibleProfessionalEmail = event.organizer.email;
-              possibleProfessionalName = event.organizer.displayName || possibleProfessionalEmail.split('@')[0];
-            } else {
-              // 2. Si la sala es el organizador (se creó directo en la sala), buscamos en invitados
-              const humanAtt = event.attendees?.find((att: any) =>
-                !att.resource && att.email !== config.googleCalendarId && !att.self
-              );
-              if (humanAtt) {
-                possibleProfessionalEmail = humanAtt.email;
-                possibleProfessionalName = humanAtt.displayName || humanAtt.email.split('@')[0];
-              } else {
-                // 3. Como último recurso, el creador (que suele ser la secretaria, evitamos esto si es posible)
-                possibleProfessionalEmail = event.creator?.email || '';
-                possibleProfessionalName = event.creator?.displayName || possibleProfessionalEmail.split('@')[0];
-              }
+            // 1. Recopilar todos los correos involucrados (organizador + invitados)
+            const participantEmails: string[] = [];
+            if (event.organizer && event.organizer.email) {
+              participantEmails.push(event.organizer.email.toLowerCase());
+            }
+            if (event.attendees && Array.isArray(event.attendees)) {
+              event.attendees.forEach((att: any) => {
+                if (att.email) participantEmails.push(att.email.toLowerCase());
+              });
             }
 
-            // Intentar cruzar el email encontrado con nuestra configuración para usar el "label" oficial
+            // 2. Buscar si ALGUNO de estos correos pertenece a un Doctor/Esteticista de la clínica
             const matchedConfig = configs.find(c =>
-              c.googleCalendarId && possibleProfessionalEmail &&
-              c.googleCalendarId.toLowerCase() === possibleProfessionalEmail.toLowerCase() &&
-              (c.type === 'professional' || c.type === 'aesthetic')
+              c.googleCalendarId &&
+              (c.type === 'professional' || c.type === 'aesthetic') &&
+              participantEmails.includes(c.googleCalendarId.toLowerCase())
             );
 
-            // Asignar el nombre final
-            finalBooker = matchedConfig?.label || possibleProfessionalName || 'Profesional';
+            if (matchedConfig) {
+              // ¡Encontramos a un doctor/esteticista oficial asignado a esta cita!
+              finalBooker = matchedConfig.label;
+            } else {
+              // 3. Fallback: Si no hay un profesional registrado en el evento, intentamos 
+              // mostrar a un humano que haya sido invitado.
+              const humanAtt = event.attendees?.find((att: any) =>
+                !att.resource && att.email && att.email.toLowerCase() !== config.googleCalendarId?.toLowerCase() && !att.self
+              );
+
+              if (humanAtt) {
+                finalBooker = humanAtt.displayName || humanAtt.email.split('@')[0];
+              } else if (event.organizer && event.organizer.email && event.organizer.email.toLowerCase() !== config.googleCalendarId?.toLowerCase()) {
+                // 4. Último recurso: El organizador o la secretaria que agendó.
+                finalBooker = event.organizer.displayName || event.organizer.email.split('@')[0];
+              } else {
+                finalBooker = 'Reserva';
+              }
+            }
 
             // Limpiar el título para no mostrar duplicados (ej: "Dr Gio - Consulta" -> "Consulta")
             if (finalBooker && title.toLowerCase().startsWith(finalBooker.toLowerCase() + ' - ')) {
