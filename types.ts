@@ -23,6 +23,7 @@ export interface CalendarEvent {
   end: string;   // ISO
   location?: string;
   description?: string;
+  booker?: string;
   source: 'events' | 'freebusy';
   isCurrent?: boolean;
 }

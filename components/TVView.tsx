@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CalendarConfig, CalendarEvent, AppRoute } from '../types';
 import { storage } from '../lib/storage';
 import { fetchCalendarBoard } from '../lib/google';
@@ -13,13 +12,15 @@ const TVView: React.FC = () => {
   const [aiInsight, setAiInsight] = useState("Sincronizando flujo...");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [lastAiRun, setLastAiRun] = useState<number>(0);
+
+  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const [selectedWeekCalendarId, setSelectedWeekCalendarId] = useState<string>('');
+
   const [filterType, setFilterType] = useState<'all' | 'professional' | 'resource' | 'general' | 'aesthetic'>(() => {
-    // 1. Prioridad: Parámetro URL (?filter=resource)
     const params = new URLSearchParams(window.location.search);
     const urlFilter = params.get('filter') as any;
     if (urlFilter && ['all', 'professional', 'resource', 'general', 'aesthetic'].includes(urlFilter)) return urlFilter;
 
-    // 2. Backup: LocalStorage (persistencia por pantalla)
     const saved = localStorage.getItem('tv_filter_type');
     if (saved && ['all', 'professional', 'resource', 'general', 'aesthetic'].includes(saved)) return saved as any;
 
@@ -31,11 +32,9 @@ const TVView: React.FC = () => {
     localStorage.setItem('tv_filter_type', type);
   };
 
-  const runAIAnalysis = async (currentEvents: CalendarEvent[]) => {
-    // 1. Cooldown Check: Solo analizar si han pasado más de 10 minutos (600,000 ms)
+  const runAIAnalysis = async (currentEvents: CalendarEvent[], targetDate: string) => {
     const now = Date.now();
     if (now - lastAiRun < 600000 && lastAiRun !== 0) {
-      console.log("AI analysis skipped (cooldown active)");
       return;
     }
 
@@ -46,23 +45,21 @@ const TVView: React.FC = () => {
 
     setIsAiLoading(true);
     try {
-      // 2. Data Cleaning: Enviamos solo lo estrictamente necesario para ahorrar tokens
-      // Quitamos descripciones, locaciones, ids largos, etc.
       const slimEvents = currentEvents.map(e => ({
         cal: e.calendarId,
         t: e.title,
-        s: e.start.split('T')[1]?.substring(0, 5) || e.start, // Solo HH:mm si es posible
+        s: e.start.split('T')[1]?.substring(0, 5) || e.start,
         e: e.end.split('T')[1]?.substring(0, 5) || e.end
       }));
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ events: slimEvents, date: selectedDate })
+        body: JSON.stringify({ events: slimEvents, date: targetDate })
       });
 
       if (response.ok) {
-        const { insight, hasConflicts } = await response.json();
+        const { insight } = await response.json();
         setAiInsight(insight);
         setLastAiRun(now);
       } else {
@@ -76,72 +73,104 @@ const TVView: React.FC = () => {
     }
   };
 
-  const loadData = async (dateToLoad: string = selectedDate) => {
+  const loadData = useCallback(async (
+    dateToLoad: string = selectedDate,
+    mode: 'day' | 'week' = viewMode,
+    weekCalId: string = selectedWeekCalendarId
+  ) => {
     try {
       const configs = await storage.getCalendars();
       const activeConfigs = configs.filter(c => c.active);
       setCalendars(activeConfigs.sort((a, b) => a.sort - b.sort));
-      const data = await fetchCalendarBoard(activeConfigs, dateToLoad);
+
+      let data: CalendarEvent[] = [];
+
+      if (mode === 'day') {
+        data = await fetchCalendarBoard(activeConfigs, dateToLoad);
+      } else {
+        if (weekCalId) {
+          const cal = activeConfigs.find(c => c.id === weekCalId);
+          if (cal) {
+            const current = new Date(dateToLoad + "T00:00:00");
+            const day = current.getDay();
+            const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(current.setDate(diff));
+            const sunday = new Date(monday);
+            sunday.setDate(sunday.getDate() + 6);
+
+            const startStr = monday.toISOString().split('T')[0];
+            const endStr = sunday.toISOString().split('T')[0];
+
+            data = await fetchCalendarBoard([cal], startStr, endStr);
+          }
+        }
+      }
+
       setEvents(data);
       setHasError(false);
 
-      // Trigger AI analysis every time data loads (limit frequency if needed)
-      runAIAnalysis(data);
+      runAIAnalysis(data, dateToLoad);
     } catch (e) {
       console.error("Refresh Error", e);
       setHasError(true);
     }
-  };
+  }, [selectedDate, viewMode, selectedWeekCalendarId, lastAiRun]);
 
   const handleDateChange = (newDate: string) => {
     setSelectedDate(newDate);
-    loadData(newDate);
+    loadData(newDate, viewMode, selectedWeekCalendarId);
   };
 
   const shiftDate = (days: number) => {
     const current = new Date(selectedDate + "T00:00:00");
+    if (viewMode === 'week') days *= 7;
     current.setDate(current.getDate() + days);
     const dateStr = current.toISOString().split('T')[0];
     handleDateChange(dateStr);
   };
 
+  const handleModeChange = (mode: 'day' | 'week') => {
+    setViewMode(mode);
+    if (mode === 'week' && !selectedWeekCalendarId && calendars.length > 0) {
+      setSelectedWeekCalendarId(calendars[0].id);
+      loadData(selectedDate, mode, calendars[0].id);
+    } else {
+      loadData(selectedDate, mode, selectedWeekCalendarId);
+    }
+  };
+
+  const handleWeekCalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedWeekCalendarId(val);
+    loadData(selectedDate, viewMode, val);
+  };
+
   useEffect(() => {
-    // Suscripción Realtime
     const subscription = storage.subscribeToCalendarChanges(() => {
       console.log("Realtime: Refreshing TV View due to configuration change");
-      loadData();
+      loadData(selectedDate, viewMode, selectedWeekCalendarId);
     });
 
-    loadData();
-    const interval = setInterval(loadData, 60000);
-    const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000);
+    loadData(selectedDate, viewMode, selectedWeekCalendarId);
+
+    const interval = setInterval(() => {
+      loadData(selectedDate, viewMode, selectedWeekCalendarId);
+    }, 60000);
+
     return () => {
       subscription.unsubscribe();
       clearInterval(interval);
-      clearInterval(timeInterval);
     };
+  }, [selectedDate, viewMode, selectedWeekCalendarId]);
+
+  useEffect(() => {
+    const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timeInterval);
   }, []);
 
   const filteredCalendars = useMemo(() => {
     return calendars.filter(c => filterType === 'all' || c.type === filterType);
   }, [calendars, filterType]);
-
-  const groupedEvents = useMemo(() => {
-    const groups: Record<string, { current: CalendarEvent[], upcoming: CalendarEvent[] }> = {};
-    filteredCalendars.forEach(cal => {
-      const calEvents = events.filter(e => e.calendarId === cal.id);
-      const now = currentTime.getTime();
-      groups[cal.id] = {
-        current: calEvents.filter(e => {
-          const start = new Date(e.start).getTime();
-          const end = new Date(e.end).getTime();
-          return now >= start && now <= end;
-        }),
-        upcoming: calEvents.filter(e => new Date(e.start).getTime() > now)
-      };
-    });
-    return groups;
-  }, [events, filteredCalendars, currentTime]);
 
   const getSubLabel = (type: string) => {
     switch (type) {
@@ -152,6 +181,72 @@ const TVView: React.FC = () => {
       default: return 'SALA / RECURSO';
     }
   };
+
+  interface DisplayColumn {
+    id: string;
+    label: string;
+    subLabel: string;
+    avatarUrl?: string;
+    current: CalendarEvent[];
+    upcoming: CalendarEvent[];
+  }
+
+  const displayColumns: DisplayColumn[] = useMemo(() => {
+    const now = currentTime.getTime();
+    if (viewMode === 'day') {
+      return filteredCalendars.map(cal => {
+        const calEvents = events.filter(e => e.calendarId === cal.id);
+        return {
+          id: cal.id,
+          label: cal.label,
+          subLabel: getSubLabel(cal.type),
+          avatarUrl: cal.avatarUrl,
+          current: calEvents.filter(e => {
+            const start = new Date(e.start).getTime();
+            const end = new Date(e.end).getTime();
+            return now >= start && now <= end;
+          }),
+          upcoming: calEvents.filter(e => new Date(e.start).getTime() > now)
+        };
+      });
+    } else {
+      // WEEK VIEW
+      const current = new Date(selectedDate + "T00:00:00");
+      const day = current.getDay();
+      const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(current.setDate(diff));
+
+      const cols: DisplayColumn[] = [];
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      for (let i = 0; i < 7; i++) {
+        const dateObj = new Date(monday);
+        dateObj.setDate(monday.getDate() + i);
+        const dateStr = dateObj.toISOString().split('T')[0];
+
+        const dayEvents = events.filter(e => e.start.startsWith(dateStr));
+
+        cols.push({
+          id: dateStr,
+          label: dateObj.toLocaleDateString('es-CO', { weekday: 'long' }).toUpperCase(),
+          subLabel: dateObj.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }),
+          current: dayEvents.filter(e => {
+            const start = new Date(e.start).getTime();
+            const end = new Date(e.end).getTime();
+            return dateStr === todayStr && now >= start && now <= end;
+          }),
+          upcoming: dayEvents.filter(e => {
+            if (dateStr < todayStr) return false;
+            if (dateStr === todayStr) {
+              return new Date(e.start).getTime() > now;
+            }
+            return true;
+          })
+        });
+      }
+      return cols;
+    }
+  }, [events, filteredCalendars, currentTime, viewMode, selectedDate]);
 
   return (
     <div className="h-screen w-screen bg-[#020617] text-white flex flex-col overflow-hidden font-sans">
@@ -186,9 +281,11 @@ const TVView: React.FC = () => {
             </button>
             <div className="relative px-3 flex flex-col items-center min-w-[100px]">
               <input type="date" value={selectedDate} onChange={(e) => handleDateChange(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer" />
-              <span className="text-[8px] font-black text-blue-500 tracking-[0.2em]">FECHA</span>
+              <span className="text-[8px] font-black text-blue-500 tracking-[0.2em]">{viewMode === 'week' ? 'SEMANA DEL' : 'FECHA'}</span>
               <span className="text-sm font-black tracking-tight text-white uppercase italic">
-                {selectedDate === new Date().toISOString().split('T')[0] ? 'HOY' : selectedDate.split('-').reverse().join('/')}
+                {selectedDate === new Date().toISOString().split('T')[0] && viewMode === 'day'
+                  ? 'HOY'
+                  : selectedDate.split('-').reverse().join('/')}
               </span>
             </div>
             <button
@@ -214,7 +311,69 @@ const TVView: React.FC = () => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR */}
-        <aside className="w-[160px] bg-[#020617] border-r border-slate-900 flex flex-col p-3 overflow-y-auto">
+        <aside className="w-[180px] bg-[#020617] border-r border-slate-900 flex flex-col p-3 overflow-y-auto">
+
+          <div className="mb-4">
+            <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2 px-0.5">MODO DE VISTA</h2>
+            <div className="flex gap-1 p-1 bg-slate-900/50 rounded-lg border border-slate-800">
+              <button
+                onClick={() => handleModeChange('day')}
+                className={`flex-1 text-[9px] font-black uppercase tracking-widest py-1.5 rounded-md transition-all ${viewMode === 'day' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                DIARIA
+              </button>
+              <button
+                onClick={() => handleModeChange('week')}
+                className={`flex-1 text-[9px] font-black uppercase tracking-widest py-1.5 rounded-md transition-all ${viewMode === 'week' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                SEMANAL
+              </button>
+            </div>
+          </div>
+
+          {viewMode === 'day' ? (
+            <div className="mb-4">
+              <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2 px-0.5">FILTRAR VISTA</h2>
+              <div className="space-y-1.5">
+                {[
+                  { id: 'all', label: 'TODO', icon: 'M4 6h16M4 12h16M4 18h16' },
+                  { id: 'professional', label: 'DOCTORES', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+                  { id: 'aesthetic', label: 'ESTÉTICA', icon: 'M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+                  { id: 'resource', label: 'SALAS', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+                  { id: 'general', label: 'OTROS', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => updateFilter(t.id as any)}
+                    className={`w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${filterType === t.id
+                      ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20'
+                      : 'bg-slate-900/40 border-slate-800/50 text-slate-400 hover:border-slate-700'
+                      }`}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={t.icon} />
+                    </svg>
+                    <span className="text-[8px] font-black uppercase tracking-widest">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mb-4">
+              <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2 px-0.5">SELECCIONAR CALENDARIO</h2>
+              <select
+                value={selectedWeekCalendarId}
+                onChange={handleWeekCalChange}
+                className="w-full bg-slate-900 border border-slate-800 text-slate-300 text-[10px] font-bold p-2 rounded-lg outline-none cursor-pointer hover:border-slate-700 transition duration-300"
+              >
+                {calendars.map(cal => (
+                  <option key={cal.id} value={cal.id}>{cal.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+
           <div className={`mb-4 transition-all duration-500 ${isAiLoading ? 'opacity-100 scale-[1.02]' : 'opacity-90'}`}>
             <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2 flex justify-between items-center px-0.5">
               <span className="flex items-center gap-1.5">
@@ -230,33 +389,6 @@ const TVView: React.FC = () => {
               <p className="text-[9px] leading-tight italic text-slate-400 font-medium">
                 {aiInsight}
               </p>
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2 px-0.5">FILTRAR VISTA</h2>
-            <div className="space-y-1.5">
-              {[
-                { id: 'all', label: 'TODO', icon: 'M4 6h16M4 12h16M4 18h16' },
-                { id: 'professional', label: 'DOCTORES', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
-                { id: 'aesthetic', label: 'ESTÉTICA', icon: 'M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-                { id: 'resource', label: 'SALAS', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-                { id: 'general', label: 'OTROS', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => updateFilter(t.id as any)}
-                  className={`w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${filterType === t.id
-                    ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20'
-                    : 'bg-slate-900/40 border-slate-800/50 text-slate-400 hover:border-slate-700'
-                    }`}
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={t.icon} />
-                  </svg>
-                  <span className="text-[8px] font-black uppercase tracking-widest">{t.label}</span>
-                </button>
-              ))}
             </div>
           </div>
 
@@ -285,25 +417,33 @@ const TVView: React.FC = () => {
 
         {/* MAIN GRID */}
         <main className="flex-1 flex overflow-x-auto bg-[#020617] no-scrollbar">
-          {filteredCalendars.map(cal => {
-            const { current, upcoming } = groupedEvents[cal.id] || { current: [], upcoming: [] };
+          {displayColumns.length === 0 && viewMode === 'week' ? (
+            <div className="flex-1 flex items-center justify-center text-slate-500 font-black text-lg">
+              CARGANDO SEMANA...
+            </div>
+          ) : displayColumns.map(col => {
+            const { current, upcoming } = col;
             return (
-              <div key={cal.id} className="min-w-[150px] flex-1 border-r border-slate-900 flex flex-col last:border-r-0">
+              <div key={col.id} className="min-w-[calc((100vw-180px)/7)] flex-1 border-r border-slate-900 flex flex-col last:border-r-0">
                 {/* Column Header */}
                 <div className="p-4 border-b border-slate-900 bg-slate-900/40 flex flex-col items-center gap-3 text-center">
-                  {cal.avatarUrl ? (
-                    <img src={cal.avatarUrl} alt={cal.label} className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-700 shadow-md mb-1" />
+                  {col.avatarUrl && viewMode === 'day' ? (
+                    <img src={col.avatarUrl} alt={col.label} className="w-24 h-24 rounded-2xl object-cover border-2 border-slate-700 shadow-md mb-2" />
+                  ) : viewMode === 'day' ? (
+                    <div className="w-24 h-24 rounded-2xl bg-slate-800 flex items-center justify-center text-2xl font-black text-slate-500 border-2 border-slate-700 mb-2">
+                      {col.label.substring(0, 1).toUpperCase()}
+                    </div>
                   ) : (
-                    <div className="w-20 h-20 rounded-2xl bg-slate-800 flex items-center justify-center text-lg font-black text-slate-500 border-2 border-slate-700 mb-1">
-                      {cal.label.substring(0, 1).toUpperCase()}
+                    <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-2xl font-black text-blue-500/50 border-2 border-slate-700 mb-2 shadow-inner">
+                      {new Date(col.id).getDate()}
                     </div>
                   )}
                   <div className="w-full">
-                    <h3 className="text-[12px] font-black text-white tracking-tight uppercase leading-tight">
-                      {cal.label}
+                    <h3 className="text-sm font-black text-white tracking-tight uppercase leading-tight">
+                      {col.label}
                     </h3>
-                    <p className="text-[8px] text-blue-500/80 uppercase tracking-widest font-black mt-1">
-                      {getSubLabel(cal.type)}
+                    <p className="text-[10px] text-blue-500/80 uppercase tracking-widest font-black mt-1">
+                      {col.subLabel}
                     </p>
                   </div>
                 </div>
@@ -320,10 +460,15 @@ const TVView: React.FC = () => {
                   {current.length > 0 ? (
                     current.map(e => (
                       <div key={e.id} className="p-2.5 rounded-lg bg-blue-600/90 border-l-2 border-blue-300 shadow-md flex flex-col justify-center min-h-[60px]">
-                        <div className="text-[7px] font-mono text-blue-50 text-center mb-0.5 font-black border-b border-blue-400/30 pb-0.5">
+                        <div className="text-[12px] font-mono text-blue-50 text-center mb-1 font-black border-b border-blue-400/30 pb-1">
                           {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(e.end).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
                         </div>
-                        <h5 className="text-[10px] font-black text-white leading-tight line-clamp-2 mt-1">{e.title}</h5>
+                        {e.booker && (
+                          <div className="text-[10px] bg-blue-800/50 text-blue-200 px-1.5 py-0.5 rounded shadow-sm inline-block self-start mb-0.5 font-bold uppercase tracking-wide">
+                            👨‍⚕️ {e.booker}
+                          </div>
+                        )}
+                        <h5 className="text-sm font-black text-white leading-tight mt-0.5" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.title}</h5>
                       </div>
                     ))
                   ) : (
@@ -343,12 +488,17 @@ const TVView: React.FC = () => {
                     <div className="space-y-1">
                       {upcoming.slice(0, 15).map((e, idx) => (
                         <div key={e.id} className={`p-1.5 rounded-md border transition-all ${idx === 0 ? 'bg-slate-900/80 border-slate-700' : 'bg-slate-900/10 border-slate-800/20 opacity-40'}`}>
-                          <div className="flex justify-between items-center mb-0.5">
-                            <span className="text-[7px] font-mono text-blue-500 font-black">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[11px] font-mono text-blue-500 font-black">
                               {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </span>
                           </div>
-                          <h5 className="text-[9px] font-bold leading-tight truncate text-slate-400">{e.title}</h5>
+                          {e.booker && (
+                            <div className="text-[9px] text-blue-400 font-bold mb-0.5 border-l-2 border-blue-500 pl-1 inline-block bg-blue-900/30 px-1 py-0.5 rounded-r-sm uppercase tracking-wide">
+                              👨‍⚕️ {e.booker}
+                            </div>
+                          )}
+                          <h5 className="text-[13px] font-bold leading-tight truncate text-slate-400">{e.title}</h5>
                         </div>
                       ))}
                     </div>
@@ -375,3 +525,4 @@ const TVView: React.FC = () => {
 };
 
 export default TVView;
+

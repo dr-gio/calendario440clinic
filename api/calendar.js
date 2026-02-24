@@ -47,10 +47,13 @@ export default async function handler(req, res) {
 
         const calendar = google.calendar({ version: 'v3', auth });
 
-        // Calculate timeMin (start of day) and timeMax (end of day) for the requested date
+        // Calculate timeMin and timeMax
         const targetDate = date ? new Date(date) : new Date();
         const timeMin = new Date(targetDate.setHours(0, 0, 0, 0)).toISOString();
-        const timeMax = new Date(targetDate.setHours(23, 59, 59, 999)).toISOString();
+
+        // Use endDate if provided, otherwise default to the same targetDate (for a single day)
+        const targetEndDate = req.query.endDate ? new Date(req.query.endDate) : new Date(targetDate);
+        const timeMax = new Date(targetEndDate.setHours(23, 59, 59, 999)).toISOString();
 
         const response = await calendar.events.list({
             calendarId: calendarId, // Use the ID from query or env
