@@ -43,13 +43,35 @@ export async function fetchCalendarBoard(
           let title = event.summary || 'Sin título';
           let finalBooker = '';
 
-          // Si el calendario es tipo 'resource' (sala o equipo), extraer el creador u organizador
-          if (config.type === 'resource' || config.type === 'general' || config.type === 'aesthetic' || config.type === 'professional') {
-            const creatorName = event.creator?.displayName || event.organizer?.displayName;
-            const creatorEmail = event.creator?.email || event.organizer?.email;
-            finalBooker = creatorName || (creatorEmail ? creatorEmail.split('@')[0] : '');
+          // Si el calendario es tipo 'resource' (sala o equipo), extraer qué profesional lo utiliza
+          if (config.type === 'resource' || config.type === 'general') {
 
-            // Clean up title if it already started with the booker name (to avoid double entry in UI)
+            // 1. Buscar si algún profesional asignado está en los invitados (attendees)
+            const professionalAtt = event.attendees?.find((att: any) => {
+              const matchedConfig = configs.find(c => c.googleCalendarId === att.email);
+              return matchedConfig && (matchedConfig.type === 'professional' || matchedConfig.type === 'aesthetic');
+            });
+
+            if (professionalAtt) {
+              const matchedConfig = configs.find(c => c.googleCalendarId === professionalAtt.email);
+              finalBooker = matchedConfig?.label || professionalAtt.displayName || professionalAtt.email.split('@')[0];
+            } else {
+              // 2. Si no hay profesionales conocidos, buscar cualquier humano que no sea la sala misma
+              const humanAtt = event.attendees?.find((att: any) =>
+                !att.resource && att.email !== config.googleCalendarId && !att.self
+              );
+
+              if (humanAtt) {
+                finalBooker = humanAtt.displayName || humanAtt.email.split('@')[0];
+              } else {
+                // 3. Como último recurso, el organizador (que podría ser recepción)
+                const creatorName = event.creator?.displayName || event.organizer?.displayName;
+                const creatorEmail = event.creator?.email || event.organizer?.email;
+                finalBooker = creatorName || (creatorEmail ? creatorEmail.split('@')[0] : '');
+              }
+            }
+
+            // Si el título ya incluía a mano el nombre del doctor (ej. "Dr Gio - Juan Perez"), limpiarlo
             if (finalBooker && title.toLowerCase().startsWith(finalBooker.toLowerCase() + ' - ')) {
               title = title.substring(finalBooker.length + 3);
             }
