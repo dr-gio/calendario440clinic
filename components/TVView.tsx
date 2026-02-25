@@ -270,19 +270,19 @@ const TVView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-slate-900/50 rounded-xl p-1 border border-slate-800 scale-90">
+          <div className="flex items-center bg-slate-900/50 rounded-xl p-2 border border-slate-800">
             <button
               onClick={() => shiftDate(-1)}
-              className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
+              className="p-4 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="relative px-3 flex flex-col items-center min-w-[100px]">
+            <div className="relative px-6 flex flex-col items-center min-w-[140px]">
               <input type="date" value={selectedDate} onChange={(e) => handleDateChange(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer" />
-              <span className="text-[8px] font-black text-blue-500 tracking-[0.2em]">{viewMode === 'week' ? 'SEMANA DEL' : 'FECHA'}</span>
-              <span className="text-sm font-black tracking-tight text-white uppercase italic">
+              <span className="text-[10px] font-black text-blue-500 tracking-[0.2em]">{viewMode === 'week' ? 'SEMANA DEL' : 'FECHA'}</span>
+              <span className="text-xl font-black tracking-tight text-white uppercase italic">
                 {selectedDate === new Date().toISOString().split('T')[0] && viewMode === 'day'
                   ? 'HOY'
                   : selectedDate.split('-').reverse().join('/')}
@@ -290,9 +290,9 @@ const TVView: React.FC = () => {
             </div>
             <button
               onClick={() => shiftDate(1)}
-              className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
+              className="p-4 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -311,20 +311,20 @@ const TVView: React.FC = () => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR */}
-        <aside className="w-[180px] bg-[#020617] border-r border-slate-900 flex flex-col p-3 overflow-y-auto">
+        <aside className="w-[240px] bg-[#020617] border-r border-slate-900 flex flex-col p-4 overflow-y-auto space-y-4">
 
           <div className="mb-4">
-            <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2 px-0.5">MODO DE VISTA</h2>
-            <div className="flex gap-1 p-1 bg-slate-900/50 rounded-lg border border-slate-800">
+            <h2 className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-3 px-0.5">MODO DE VISTA</h2>
+            <div className="flex gap-2 p-1.5 bg-slate-900/50 rounded-lg border border-slate-800">
               <button
                 onClick={() => handleModeChange('day')}
-                className={`flex-1 text-[9px] font-black uppercase tracking-widest py-1.5 rounded-md transition-all ${viewMode === 'day' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`flex-1 text-xs font-black uppercase tracking-widest py-3 rounded-md transition-all ${viewMode === 'day' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
               >
                 DIARIA
               </button>
               <button
                 onClick={() => handleModeChange('week')}
-                className={`flex-1 text-[9px] font-black uppercase tracking-widest py-1.5 rounded-md transition-all ${viewMode === 'week' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`flex-1 text-xs font-black uppercase tracking-widest py-3 rounded-md transition-all ${viewMode === 'week' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
               >
                 SEMANAL
               </button>
@@ -333,8 +333,8 @@ const TVView: React.FC = () => {
 
           {viewMode === 'day' ? (
             <div className="mb-4">
-              <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2 px-0.5">FILTRAR VISTA</h2>
-              <div className="space-y-1.5">
+              <h2 className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-3 px-0.5">FILTRAR VISTA</h2>
+              <div className="space-y-2">
                 {[
                   { id: 'all', label: 'TODO', icon: 'M4 6h16M4 12h16M4 18h16' },
                   { id: 'professional', label: 'DOCTORES', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
@@ -345,26 +345,26 @@ const TVView: React.FC = () => {
                   <button
                     key={t.id}
                     onClick={() => updateFilter(t.id as any)}
-                    className={`w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${filterType === t.id
+                    className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all ${filterType === t.id
                       ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20'
                       : 'bg-slate-900/40 border-slate-800/50 text-slate-400 hover:border-slate-700'
                       }`}
                   >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={t.icon} />
                     </svg>
-                    <span className="text-[8px] font-black uppercase tracking-widest">{t.label}</span>
+                    <span className="text-[11px] font-black uppercase tracking-widest">{t.label}</span>
                   </button>
                 ))}
               </div>
             </div>
           ) : (
             <div className="mb-4">
-              <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2 px-0.5">SELECCIONAR CALENDARIO</h2>
+              <h2 className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-3 px-0.5">SELECCIONAR CALENDARIO</h2>
               <select
                 value={selectedWeekCalendarId}
                 onChange={handleWeekCalChange}
-                className="w-full bg-slate-900 border border-slate-800 text-slate-300 text-[10px] font-bold p-2 rounded-lg outline-none cursor-pointer hover:border-slate-700 transition duration-300"
+                className="w-full bg-slate-900 border border-slate-800 text-slate-300 text-sm font-bold p-3.5 rounded-xl outline-none cursor-pointer hover:border-slate-700 transition duration-300"
               >
                 {calendars.map(cal => (
                   <option key={cal.id} value={cal.id}>{cal.label}</option>
@@ -377,16 +377,16 @@ const TVView: React.FC = () => {
           <div className={`mb-4 transition-all duration-500 ${isAiLoading ? 'opacity-100 scale-[1.02]' : 'opacity-90'}`}>
             <h2 className="text-[7px] font-black text-blue-500 uppercase tracking-widest mb-2 flex justify-between items-center px-0.5">
               <span className="flex items-center gap-1.5">
-                <span className="relative flex h-1.5 w-1.5">
+                <span className="relative flex h-2 w-2">
                   {isAiLoading && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>}
-                  <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isAiLoading ? 'bg-blue-500' : 'bg-blue-900/50'}`}></span>
+                  <span className={`relative inline-flex rounded-full h-2 w-2 ${isAiLoading ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]' : 'bg-blue-900/50'}`}></span>
                 </span>
                 IA AGENT
               </span>
-              {isAiLoading && <span className="text-[5px] animate-pulse">ANALYZING...</span>}
+              {isAiLoading && <span className="text-[6px] animate-pulse">ANALYZING...</span>}
             </h2>
-            <div className={`p-2.5 rounded-lg border transition-all duration-500 ${isAiLoading ? 'bg-blue-950/20 border-blue-500/30' : 'bg-slate-900/40 border-slate-800/50'}`}>
-              <p className="text-[9px] leading-tight italic text-slate-400 font-medium">
+            <div className={`p-3 rounded-xl border transition-all duration-500 ${isAiLoading ? 'bg-blue-950/20 border-blue-500/40 shadow-inner' : 'bg-slate-900/40 border-slate-800/50'}`}>
+              <p className="text-[10px] leading-tight italic text-slate-400 font-medium">
                 {aiInsight}
               </p>
             </div>
@@ -424,7 +424,7 @@ const TVView: React.FC = () => {
           ) : displayColumns.map(col => {
             const { current, upcoming } = col;
             return (
-              <div key={col.id} className="min-w-[calc((100vw-180px)/7)] flex-1 border-r border-slate-900 flex flex-col last:border-r-0">
+              <div key={col.id} className="min-w-[calc((100vw-240px)/7)] flex-1 border-r border-slate-900 flex flex-col last:border-r-0">
                 {/* Column Header */}
                 <div className="p-4 border-b border-slate-900 bg-slate-900/40 flex flex-col items-center gap-3 text-center">
                   {col.avatarUrl && viewMode === 'day' ? (
@@ -439,10 +439,10 @@ const TVView: React.FC = () => {
                     </div>
                   )}
                   <div className="w-full">
-                    <h3 className="text-sm font-black text-white tracking-tight uppercase leading-tight">
+                    <h3 className="text-xl font-black text-white tracking-tight uppercase leading-tight">
                       {col.label}
                     </h3>
-                    <p className="text-[10px] text-blue-500/80 uppercase tracking-widest font-black mt-1">
+                    <p className="text-xs text-blue-500/80 uppercase tracking-widest font-black mt-1">
                       {col.subLabel}
                     </p>
                   </div>
@@ -459,16 +459,16 @@ const TVView: React.FC = () => {
 
                   {current.length > 0 ? (
                     current.map(e => (
-                      <div key={e.id} className="p-2.5 rounded-lg bg-blue-600/90 border-l-2 border-blue-300 shadow-md flex flex-col justify-center min-h-[60px]">
-                        <div className="text-[12px] font-mono text-blue-50 text-center mb-1 font-black border-b border-blue-400/30 pb-1">
+                      <div key={e.id} className="p-3.5 rounded-xl bg-blue-600 border-l-4 border-blue-300 shadow-lg flex flex-col justify-center min-h-[80px]">
+                        <div className="text-sm font-mono text-blue-50 text-center mb-1.5 font-bold border-b border-blue-400/30 pb-1">
                           {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(e.end).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
                         </div>
                         {e.booker && (
-                          <div className="text-[10px] bg-blue-800/50 text-blue-200 px-1.5 py-0.5 rounded shadow-sm inline-block self-start mb-0.5 font-bold uppercase tracking-wide">
+                          <div className="text-xs bg-blue-800/60 text-blue-50 px-2 py-1 rounded shadow-sm inline-block self-start mb-1 font-black uppercase tracking-wider">
                             👨‍⚕️ {e.booker}
                           </div>
                         )}
-                        <h5 className="text-sm font-black text-white leading-tight mt-0.5" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.title}</h5>
+                        <h5 className="text-lg font-black text-white leading-tight mt-0.5" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.title}</h5>
                       </div>
                     ))
                   ) : (
@@ -487,18 +487,18 @@ const TVView: React.FC = () => {
                   {upcoming.length > 0 ? (
                     <div className="space-y-1">
                       {upcoming.slice(0, 15).map((e, idx) => (
-                        <div key={e.id} className={`p-1.5 rounded-md border transition-all ${idx === 0 ? 'bg-slate-900/80 border-slate-700' : 'bg-slate-900/10 border-slate-800/20 opacity-40'}`}>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-[11px] font-mono text-blue-500 font-black">
+                        <div key={e.id} className={`p-2.5 rounded-lg border transition-all ${idx === 0 ? 'bg-slate-900 border-slate-700' : 'bg-slate-900/10 border-slate-800/20 opacity-40'}`}>
+                          <div className="flex justify-between items-center mb-1.5">
+                            <span className="text-sm font-mono text-blue-500 font-black">
                               {new Date(e.start).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </span>
                           </div>
                           {e.booker && (
-                            <div className="text-[9px] text-blue-400 font-bold mb-0.5 border-l-2 border-blue-500 pl-1 inline-block bg-blue-900/30 px-1 py-0.5 rounded-r-sm uppercase tracking-wide">
+                            <div className="text-[10px] text-blue-400 font-black mb-1 border-l-2 border-blue-500 pl-1.5 inline-block bg-blue-900/30 px-2 py-0.5 rounded-r-sm uppercase tracking-widest">
                               👨‍⚕️ {e.booker}
                             </div>
                           )}
-                          <h5 className="text-[13px] font-bold leading-tight truncate text-slate-400">{e.title}</h5>
+                          <h5 className="text-base font-bold leading-tight text-slate-300">{e.title}</h5>
                         </div>
                       ))}
                     </div>

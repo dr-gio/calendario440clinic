@@ -1,4 +1,3 @@
-const { google } = require('googleapis');
 // mock data to test logic
 const configs = [
   { id: '1', label: 'Dr Gio', googleCalendarId: 'drgio@clinic.com', type: 'professional' },

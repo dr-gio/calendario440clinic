@@ -45,8 +45,9 @@ export async function fetchCalendarBoard(
 
           // Si el calendario es tipo 'resource' (sala o equipo), extraer qué profesional lo utiliza
           if (config.type === 'resource' || config.type === 'general') {
+            const professionals = configs.filter(c => c.type === 'professional' || c.type === 'aesthetic');
 
-            // 1. Recopilar todos los correos involucrados (organizador + invitados)
+            // 1. Recopilar todos los participantes (organizador + invitados)
             const participantEmails: string[] = [];
             if (event.organizer && event.organizer.email) {
               participantEmails.push(event.organizer.email.toLowerCase());
@@ -57,41 +58,56 @@ export async function fetchCalendarBoard(
               });
             }
 
-            // 2. Buscar si ALGUNO de estos correos pertenece a un Doctor/Esteticista de la clínica
-            const matchedConfig = configs.find(c =>
-              c.googleCalendarId &&
-              (c.type === 'professional' || c.type === 'aesthetic') &&
-              participantEmails.includes(c.googleCalendarId.toLowerCase())
+            // 2. Buscar match por EMAIL en la lista de profesionales configurados
+            const matchedByEmail = professionals.find(p => 
+              p.googleCalendarId && participantEmails.includes(p.googleCalendarId.toLowerCase())
             );
 
-            if (matchedConfig) {
-              // ¡Encontramos a un doctor/esteticista oficial asignado a esta cita!
-              finalBooker = matchedConfig.label;
+            if (matchedByEmail) {
+              finalBooker = matchedByEmail.label;
             } else {
-              // 3. Fallback: Si no hay un profesional registrado en el evento, intentamos 
-              // mostrar a un humano que haya sido invitado.
-              const humanAtt = event.attendees?.find((att: any) =>
-                !att.resource && att.email && att.email.toLowerCase() !== config.googleCalendarId?.toLowerCase() && !att.self
+              // 3. Buscar match por NOMBRE en el TÍTULO del evento
+              // Ej: Si el título es "Consulta Dr. Giovanni" y tenemos un profesional con label "Dr. Giovanni"
+              const matchedByNameInTitle = professionals.find(p => 
+                title.toLowerCase().includes(p.label.toLowerCase()) ||
+                (p.label.length > 5 && title.toLowerCase().includes(p.label.toLowerCase().substring(0, 8)))
               );
 
-              if (humanAtt) {
-                finalBooker = humanAtt.displayName || humanAtt.email.split('@')[0];
-              } else if (event.organizer && event.organizer.email && event.organizer.email.toLowerCase() !== config.googleCalendarId?.toLowerCase()) {
-                // 4. Último recurso: El organizador o la secretaria que agendó.
-                finalBooker = event.organizer.displayName || event.organizer.email.split('@')[0];
+              if (matchedByNameInTitle) {
+                finalBooker = matchedByNameInTitle.label;
               } else {
-                finalBooker = 'Reserva';
+                // 4. Fallback: Si no hay match profesional, buscar el primer humano invitado (que no sea el recurso)
+                const humanAtt = event.attendees?.find((att: any) =>
+                  !att.resource && att.email && att.email.toLowerCase() !== config.googleCalendarId?.toLowerCase() && !att.self
+                );
+
+                if (humanAtt) {
+                  finalBooker = humanAtt.displayName || humanAtt.email.split('@')[0];
+                } else if (event.organizer && event.organizer.email && event.organizer.email.toLowerCase() !== config.googleCalendarId?.toLowerCase()) {
+                  // Final fallback: Organizador (probablemente la secretaria)
+                  finalBooker = event.organizer.displayName || event.organizer.email.split('@')[0];
+                } else {
+                  finalBooker = 'Personal';
+                }
               }
             }
 
             // Limpiar el título para no mostrar duplicados (ej: "Dr Gio - Consulta" -> "Consulta")
-            if (finalBooker && title.toLowerCase().startsWith(finalBooker.toLowerCase() + ' - ')) {
+            const cleanBooker = finalBooker.toLowerCase();
+            if (finalBooker && title.toLowerCase().startsWith(cleanBooker + ' - ')) {
               title = title.substring(finalBooker.length + 3).trim();
+            } else if (finalBooker && title.toLowerCase().startsWith(cleanBooker)) {
+              // Si el título empieza por el nombre sin el guion, también limpiar
+              const rest = title.substring(finalBooker.length).trim();
+              if (rest.startsWith('-') || rest.startsWith(':')) {
+                title = rest.substring(1).trim();
+              } else if (rest.length > 0 && rest[0] === ' ') {
+                 title = rest;
+              }
             } else if (finalBooker && title.includes(' - ')) {
-              // Limpieza adicional si hay guiones pero no coinciden exactamente
               const parts = title.split(' - ');
-              if (finalBooker.toLowerCase().includes(parts[0].toLowerCase().trim()) ||
-                parts[0].toLowerCase().trim().includes(finalBooker.toLowerCase())) {
+              if (cleanBooker.includes(parts[0].toLowerCase().trim()) ||
+                parts[0].toLowerCase().trim().includes(cleanBooker)) {
                 title = parts.slice(1).join(' - ').trim();
               }
             }
